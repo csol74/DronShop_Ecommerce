@@ -37,11 +37,27 @@
 
     <div class="ds-navbar__actions">
         @auth
+            <!-- Carrito con badge -->
+            <a href="{{ route('carrito.index') }}" class="btn-icon cart-badge">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+                @php $totalCarrito = \App\Http\Controllers\CarritoController::contarItems(); @endphp
+                @if($totalCarrito > 0)
+                    <span class="cart-badge__count">{{ $totalCarrito > 9 ? '9+' : $totalCarrito }}</span>
+                @endif
+            </a>
+
+            <!-- Historial órdenes -->
+            <a href="{{ route('orden.historial') }}" class="btn btn-ghost" style="font-size:.85rem">
+                Mis pedidos
+            </a>
+
             @if(auth()->user()->role === 'admin')
-                <a href="{{ route('admin.dashboard') }}" class="btn btn-ghost" style="font-size:.8rem">
-                    ⚙️ Admin
-                </a>
+                <a href="{{ route('admin.dashboard') }}" class="btn btn-ghost" style="font-size:.8rem">⚙️ Admin</a>
             @endif
+
             <form method="POST" action="{{ route('logout') }}" style="margin:0">
                 @csrf
                 <button type="submit" class="btn btn-ghost">Salir</button>
@@ -67,7 +83,7 @@
                 Tu marketplace premium con entrega inteligente por drones, moto y carro.
                 Tecnología, deporte y moda en un solo lugar.
             </p>
-            
+
         </div>
         <div class="ds-footer__col">
             <div class="ds-footer__col-title">Líneas</div>

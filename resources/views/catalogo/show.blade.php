@@ -93,12 +93,18 @@
 
             <!-- Acción -->
             @auth
-                <button class="btn btn-gold" style="padding:1rem 2rem;font-size:1rem;margin-top:.5rem">
-                    🛒 Agregar al carrito
-                </button>
+                <form method="POST" action="{{ route('carrito.agregar', $producto) }}" style="margin:0">
+                    @csrf
+                    <input type="hidden" name="cantidad" value="1">
+                    <button type="submit" class="btn btn-gold" style="padding:1rem 2rem;font-size:1rem;margin-top:.5rem">
+                        🛒 Agregar al carrito
+                    </button>
+                </form>
+                @if(session('success'))
+                    <div class="flash flash-success">{{ session('success') }}</div>
+                @endif
             @else
-                <a href="{{ route('login') }}" class="btn btn-gold"
-                   style="padding:1rem 2rem;font-size:1rem;margin-top:.5rem">
+                <a href="{{ route('login') }}" class="btn btn-gold" style="padding:1rem 2rem;font-size:1rem;margin-top:.5rem">
                     Inicia sesión para comprar →
                 </a>
             @endauth
