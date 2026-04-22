@@ -8,7 +8,6 @@
         <div class="flash flash-error">{{ session('error') }}</div>
     @endif
 
-    <div class="payment-logo">💳</div>
     <div class="payment-total">$ {{ number_format($orden->total, 0, ',', '.') }}</div>
     <div class="payment-order">Orden {{ $orden->codigo }}</div>
 

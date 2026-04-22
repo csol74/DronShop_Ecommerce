@@ -47,8 +47,7 @@ class PagoController extends Controller
             'items'               => $items,
             'external_reference'  => $orden->codigo,
             'payer'               => [
-                'email' => auth()->user()->email,
-                'name'  => auth()->user()->name,
+                'email' => 'TESTUSER8749949140439014293@testuser.com',
             ],
             'back_urls' => [
                 'success' => route('pago.success'),
@@ -56,7 +55,7 @@ class PagoController extends Controller
                 'pending' => route('pago.pending'),
             ],
             'auto_return'         => 'approved',
-            'notification_url'    => route('pago.webhook'),
+            'notification_url'    => 'https://flashbulb-tiling-expose.ngrok-free.dev/pago/webhook',
             'statement_descriptor'=> 'DRONSHOP',
         ];
 

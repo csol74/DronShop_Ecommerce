@@ -39,10 +39,12 @@ Route::prefix('ordenes')->name('orden.')->middleware('auth')->group(function () 
 // Pagos MercadoPago
 Route::prefix('pago')->name('pago.')->group(function () {
     Route::post('/preferencia/{orden}', [PagoController::class, 'crearPreferencia'])->name('preferencia')->middleware('auth');
-    Route::get('/success',              [PagoController::class, 'success'])          ->name('success');
+    Route::get('/success',              [PagoController::class, 'success'])           ->name('success');
     Route::get('/failure',              [PagoController::class, 'failure'])           ->name('failure');
     Route::get('/pending',              [PagoController::class, 'pending'])           ->name('pending');
-    Route::post('/webhook',             [PagoController::class, 'webhook'])           ->name('webhook')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
+    // Eliminamos el withoutMiddleware porque ya lo configuramos en bootstrap/app.php
+    Route::post('/webhook',             [PagoController::class, 'webhook'])           ->name('webhook');
 });
 
 // Rutas solo admin
