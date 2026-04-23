@@ -55,4 +55,8 @@ class User extends Authenticatable
     {
         return $this->role === 'admin';
     }
+    public function ordenes()
+    {
+        return $this->hasMany(\App\Models\Orden::class);
+    }
 }
