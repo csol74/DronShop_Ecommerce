@@ -58,6 +58,10 @@
                                 <div style="display:flex;gap:.5rem">
                                     <a href="{{ route('orden.show', $orden) }}" class="btn btn-ghost"
                                        style="padding:.4rem .75rem;font-size:.8rem">Ver</a>
+                                    @if(in_array($orden->estado, ['pagado','en_despacho','entregado']) && $orden->seguimiento()->exists())
+                                        <a href="{{ route('tracking.index', $orden) }}" class="btn btn-ghost"
+                                        style="padding:.4rem .75rem;font-size:.8rem">📍 Rastrear</a>
+                                    @endif
                                     @if($orden->estado === 'pendiente')
                                         <a href="{{ route('orden.pago', $orden) }}" class="btn btn-gold"
                                            style="padding:.4rem .75rem;font-size:.8rem">Pagar</a>

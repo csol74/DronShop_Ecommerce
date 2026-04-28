@@ -16,4 +16,12 @@ class OrdenItem extends Model
     {
         return $this->belongsTo(Producto::class);
     }
+    public function seguimiento()
+    {
+        return $this->hasMany(SeguimientoOrden::class)->orderBy('created_at');
+    }
+    public function vuelo()
+    {
+        return $this->hasOne(VueloDron::class);
+    }
 }

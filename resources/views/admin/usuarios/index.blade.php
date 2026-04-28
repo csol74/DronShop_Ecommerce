@@ -22,7 +22,7 @@
             </div>
             <select name="rol" class="admin-select" onchange="this.form.submit()">
                 <option value="">Todos los roles</option>
-                @foreach(['cliente','admin','operario','proveedor'] as $r)
+                @foreach(['cliente','admin','proveedor'] as $r)
                     <option value="{{ $r }}" {{ request('rol') === $r ? 'selected' : '' }}>
                         {{ ucfirst($r) }}
                     </option>
@@ -53,7 +53,6 @@
                         @php
                             $roleColor = match($user->role) {
                                 'admin'     => ['color'=>'#C9A84C','bg'=>'#451a0350'],
-                                'operario'  => ['color'=>'#60A5FA','bg'=>'#0c1a3550'],
                                 'proveedor' => ['color'=>'#A78BFA','bg'=>'#1e123350'],
                                 default     => ['color'=>'#94A3B8','bg'=>'#1E2D4540'],
                             };
@@ -78,7 +77,7 @@
                                   style="display:flex;gap:.5rem;align-items:center">
                                 @csrf @method('PATCH')
                                 <select name="role" class="admin-select" style="font-size:.8rem">
-                                    @foreach(['cliente','admin','operario','proveedor'] as $r)
+                                    @foreach(['cliente','admin','proveedor'] as $r)
                                         <option value="{{ $r }}" {{ $user->role === $r ? 'selected' : '' }}>
                                             {{ ucfirst($r) }}
                                         </option>

@@ -263,7 +263,7 @@ class DronShopSeeder extends Seeder
                 'descripcion'     => 'Sudadera premium en fleece de 400GSM con bordado minimalista, fit oversize y puños acanalados de alta durabilidad.',
                 'precio'          => 195000,
                 'stock'           => 70,
-                'imagen'          => 'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600&q=80',
+                'imagen'          => 'https://m.media-amazon.com/images/I/41HotM2SuCL._AC_UY1000_.jpg',
                 'caracteristicas' => json_encode([
                     'Material'   => '80% algodón / 20% poliéster 400GSM',
                     'Tallas'     => 'S — XXL',
@@ -317,6 +317,7 @@ class DronShopSeeder extends Seeder
                 'categoria_id' => 3,
                 'proveedor_id' => 3,
             ],
+
         ];
 
         foreach ($productos as $prod) {
@@ -325,5 +326,64 @@ class DronShopSeeder extends Seeder
                 'created_at' => now(),
             ]));
         }
+        // Dron
+        DB::table('drones')->insert([
+            'nombre'              => 'DronShop Alpha-1',
+            'modelo'              => 'DJI Matrice 300 RTK',
+            'numero_serie'        => 'DS-UAV-2024-001',
+            'fabricante'          => 'DJI Enterprise',
+            'fecha_adquisicion'   => '2024-01-15',
+            'autonomia_min'       => 55,
+            'velocidad_max_kmh'   => 82.8,
+            'alcance_max_km'      => 15.0,
+            'carga_max_kg'        => 2.7,
+            'bateria_minima_pct'  => 20,
+            'bateria_actual_pct'  => 87,
+            'zonas_permitidas'    => json_encode([
+                ['nombre' => 'Zona Norte Bucaramanga', 'radio_km' => 8, 'lat' => 7.1198, 'lng' => -73.1227],
+                ['nombre' => 'Zona Centro',            'radio_km' => 5, 'lat' => 7.1254, 'lng' => -73.1198],
+            ]),
+            'condiciones_climaticas' => json_encode([
+                'viento_max_kmh' => 40,
+                'lluvia'         => false,
+                'niebla'         => false,
+                'temp_min_c'     => 5,
+                'temp_max_c'     => 40,
+            ]),
+            'estado'      => 'disponible',
+            'lat_actual'  => 7.1254,
+            'lng_actual'  => -73.1198,
+            'created_at'  => now(),
+        ]);
+
+        // Mantenimiento 1
+        DB::table('mantenimientos')->insert([
+            'dron_id'          => 1,
+            'tipo'             => 'preventivo',
+            'descripcion'      => 'Revisión general de motores y hélices',
+            'fecha_programada' => now()->addDays(7)->toDateString(),
+            'fecha_realizada'  => null,
+            'costo'            => null,
+            'tecnico'          => 'Ing. Carlos Ruiz',
+            'estado'           => 'pendiente',
+            'observaciones'    => null,
+            'created_at'       => now(),
+            'updated_at'       => now(),
+        ]);
+
+        // Mantenimiento 2
+        DB::table('mantenimientos')->insert([
+            'dron_id'          => 1,
+            'tipo'             => 'correctivo',
+            'descripcion'      => 'Reemplazo de batería principal',
+            'fecha_programada' => now()->subDays(10)->toDateString(),
+            'fecha_realizada'  => now()->subDays(9)->toDateString(),
+            'costo'            => 450000,
+            'tecnico'          => 'Ing. Carlos Ruiz',
+            'estado'           => 'completado',
+            'observaciones'    => 'Batería reemplazada. Autonomía restaurada a 55 min.',
+            'created_at'       => now()->subDays(10),
+            'updated_at'       => now()->subDays(9),
+        ]);
     }
 }

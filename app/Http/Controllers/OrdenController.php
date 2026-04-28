@@ -103,10 +103,10 @@ class OrdenController extends Controller
 
     public function historial()
     {
-        $ordenes = Orden::with('items')
-            ->where('user_id', auth()->id())
-            ->latest()
-            ->paginate(10);
+        $ordenes = Orden::with(['items', 'seguimiento'])
+        ->where('user_id', auth()->id())
+        ->latest()
+        ->paginate(10);
 
         return view('orden.historial', compact('ordenes'));
     }

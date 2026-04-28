@@ -27,7 +27,7 @@ class UsuarioController extends Controller
 
     public function cambiarRol(Request $request, User $user)
     {
-        $request->validate(['role' => 'required|in:cliente,admin,operario,proveedor']);
+        $request->validate(['role' => 'required|in:cliente,admin,proveedor']);
 
         abort_if($user->id === auth()->id(), 403, 'No puedes cambiar tu propio rol.');
 

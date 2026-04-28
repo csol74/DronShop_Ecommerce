@@ -40,6 +40,11 @@
                     </button>
                 </form>
             @endif
+            @if(in_array($orden->estado, ['pagado','en_despacho','entregado']) && $orden->seguimiento->count())
+                <a href="{{ route('tracking.index', $orden) }}" class="btn btn-gold">
+                    📍 Rastrear pedido en vivo
+                </a>
+@endif
         </div>
     </div>
 

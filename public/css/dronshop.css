@@ -2198,3 +2198,303 @@ img { max-width: 100%; display: block; }
     .charts-grid { grid-template-columns: 1fr; }
     .admin-form-grid { grid-template-columns: 1fr; }
 }
+
+/* ══════════════════════════════════════════════════
+   TRACKING / SEGUIMIENTO
+   ══════════════════════════════════════════════════ */
+
+.tracking-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2.5rem 2rem;
+}
+
+.tracking-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 2rem;
+    align-items: start;
+}
+
+/* ── Timeline ── */
+.timeline {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+}
+
+.timeline__title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.timeline__live {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    font-size: .75rem;
+    color: #4ade80;
+    font-weight: 500;
+}
+
+.timeline__live::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: #4ade80;
+    border-radius: 50%;
+    animation: pulse-green 1.5s infinite;
+}
+
+@keyframes pulse-green {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .5; transform: scale(1.3); }
+}
+
+.timeline-step {
+    display: flex;
+    gap: 1rem;
+    position: relative;
+    padding-bottom: 1.75rem;
+}
+
+.timeline-step:last-child { padding-bottom: 0; }
+
+.timeline-step::before {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 42px;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+    transition: var(--transition);
+}
+
+.timeline-step:last-child::before { display: none; }
+
+.timeline-step.done::before {
+    background: linear-gradient(to bottom, var(--gold-500), var(--border));
+}
+
+.timeline-step__dot {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg-surface);
+    display: grid;
+    place-items: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    transition: var(--transition);
+    position: relative;
+    z-index: 1;
+}
+
+.timeline-step.done .timeline-step__dot {
+    border-color: var(--gold-500);
+    background: var(--border-glow);
+    box-shadow: 0 0 16px #C9A84C30;
+}
+
+.timeline-step.active .timeline-step__dot {
+    border-color: var(--cyan-400);
+    background: #06B6D420;
+    animation: pulse-cyan 2s infinite;
+}
+
+@keyframes pulse-cyan {
+    0%, 100% { box-shadow: 0 0 0 0 #22D3EE40; }
+    50% { box-shadow: 0 0 0 8px transparent; }
+}
+
+.timeline-step__content { flex: 1; padding-top: .4rem; }
+
+.timeline-step__titulo {
+    font-family: 'Syne', sans-serif;
+    font-size: .95rem;
+    font-weight: 700;
+    margin-bottom: .2rem;
+    color: var(--text-secondary);
+}
+
+.timeline-step.done .timeline-step__titulo,
+.timeline-step.active .timeline-step__titulo {
+    color: var(--text-primary);
+}
+
+.timeline-step__desc { font-size: .82rem; color: var(--text-muted); line-height: 1.5; }
+
+.timeline-step__time {
+    font-size: .75rem;
+    color: var(--text-muted);
+    margin-top: .3rem;
+}
+
+/* ── Mapa tracking ── */
+.tracking-map-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: sticky;
+    top: 90px;
+}
+
+.tracking-map-head {
+    padding: 1rem 1.25rem;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    font-family: 'Syne', sans-serif;
+    font-size: .85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.tracking-map {
+    height: 360px;
+    width: 100%;
+}
+
+.tracking-info-card {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+}
+
+.tracking-info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: .85rem;
+}
+
+.tracking-info-row .lbl { color: var(--text-muted); }
+.tracking-info-row .val { font-weight: 500; color: var(--text-primary); }
+
+/* ── Header tracking ── */
+.tracking-header {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.tracking-header__icon {
+    font-size: 2.5rem;
+    width: 64px;
+    height: 64px;
+    display: grid;
+    place-items: center;
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.tracking-header__transport {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--cyan-400);
+    font-weight: 600;
+    margin-bottom: .25rem;
+}
+
+.tracking-header__code {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+.tracking-header__eta {
+    text-align: right;
+}
+
+.tracking-header__eta-label {
+    font-size: .78rem;
+    color: var(--text-muted);
+    margin-bottom: .2rem;
+}
+
+.tracking-header__eta-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold-400);
+}
+
+/* ══════════════════════════════════════════════════
+   ADMIN DRON
+   ══════════════════════════════════════════════════ */
+
+.dron-ficha {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.dron-stat {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+}
+
+.dron-stat__label {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-muted);
+    margin-bottom: .35rem;
+}
+
+.dron-stat__value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Batería */
+.battery-bar {
+    height: 12px;
+    background: var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: .5rem;
+}
+
+.battery-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width .5s ease;
+}
+
+/* Mapa monitoreo admin */
+.monitor-map {
+    height: 500px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+@media (max-width: 768px) {
+    .tracking-grid { grid-template-columns: 1fr; }
+    .dron-ficha    { grid-template-columns: 1fr; }
+}

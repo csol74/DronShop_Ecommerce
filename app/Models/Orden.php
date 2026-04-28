@@ -58,4 +58,14 @@ class Orden extends Model
         $num    = $ultimo ? ((int) substr($ultimo->codigo, 4)) + 1 : 1;
         return 'ORD-' . str_pad($num, 6, '0', STR_PAD_LEFT);
     }
+
+    public function seguimiento()
+    {
+        return $this->hasMany(\App\Models\SeguimientoOrden::class)->orderBy('created_at');
+    }
+
+    public function vuelo()
+    {
+        return $this->hasOne(\App\Models\VueloDron::class);
+    }
 }

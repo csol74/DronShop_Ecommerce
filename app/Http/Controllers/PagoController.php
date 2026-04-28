@@ -89,6 +89,10 @@ class PagoController extends Controller
                 'mp_status'      => $request->status,
             ]);
         }
+        // Iniciar seguimiento automático al confirmar pago
+        if ($orden && $orden->estado === 'pagado') {
+            \App\Http\Controllers\TrackingController::iniciarSeguimiento($orden);
+        }
 
         return redirect()->route('orden.show', $orden)
             ->with('success', '🎉 ¡Pago exitoso! Tu orden está confirmada.');

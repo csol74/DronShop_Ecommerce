@@ -9,6 +9,9 @@ use App\Http\Controllers\Admin\ProductoController as AdminProductoController;
 use App\Http\Controllers\Admin\OrdenController as AdminOrdenController;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\ProveedorController as AdminProveedorController;
+use App\Http\Controllers\TrackingController;
+use App\Http\Controllers\Admin\DronController;
+use App\Http\Controllers\Admin\MantenimientoController;
 
 // Home → redirige al catálogo
 Route::get('/', fn() => redirect()->route('catalogo.index'));
@@ -18,9 +21,13 @@ Route::get('/catalogo', [CatalogoController::class, 'index'])->name('catalogo.in
 Route::get('/catalogo/{slug}', [CatalogoController::class, 'show'])->name('catalogo.show');
 
 // Rutas autenticadas
-Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
-});
+Route::get('/dashboard', function () {
+    if (auth()->user()->isAdmin()) {
+        return redirect()->route('admin.dashboard');
+    }
+    return redirect()->route('catalogo.index');
+})->middleware('auth')->name('dashboard');
+
 // Carrito
 Route::prefix('carrito')->name('carrito.')->middleware('auth')->group(function () {
     Route::get('/',                              [CarritoController::class, 'index'])     ->name('index');
@@ -81,6 +88,26 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/proveedores/{proveedor}/editar',       [AdminProveedorController::class, 'edit'])       ->name('proveedores.edit');
     Route::put('/proveedores/{proveedor}',              [AdminProveedorController::class, 'update'])     ->name('proveedores.update');
     Route::delete('/proveedores/{proveedor}',           [AdminProveedorController::class, 'destroy'])    ->name('proveedores.destroy');
+});
+
+// Tracking cliente
+Route::middleware('auth')->group(function () {
+    Route::get('/tracking/{orden}',        [TrackingController::class, 'index']) ->name('tracking.index');
+    Route::get('/tracking/{orden}/estado', [TrackingController::class, 'estado'])->name('tracking.estado');
+});
+
+// Dron y monitoreo (admin + operario)
+Route::middleware(['auth', 'role:admin,operario'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dron',                          [DronController::class, 'index'])          ->name('dron.index');
+    Route::get('/dron/editar',                   [DronController::class, 'editar'])         ->name('dron.editar');
+    Route::put('/dron',                          [DronController::class, 'actualizar'])     ->name('dron.actualizar');
+    Route::get('/dron/monitoreo',                [DronController::class, 'monitoreo'])      ->name('dron.monitoreo');
+    Route::post('/dron/tracking/{orden}/avanzar',[DronController::class, 'avanzarTracking'])->name('dron.tracking.avanzar');
+    Route::get('/dron/api/estado',               [DronController::class, 'apiEstado'])      ->name('dron.api.estado');
+
+    Route::get('/mantenimiento',                 [MantenimientoController::class, 'index'])    ->name('mantenimiento.index');
+    Route::post('/mantenimiento',                [MantenimientoController::class, 'store'])    ->name('mantenimiento.store');
+    Route::patch('/mantenimiento/{mantenimiento}',[MantenimientoController::class, 'actualizar'])->name('mantenimiento.actualizar');
 });
 
 require __DIR__ . '/auth.php';
