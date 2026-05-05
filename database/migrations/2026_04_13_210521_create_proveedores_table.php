@@ -21,6 +21,7 @@ return new class extends Migration
         $table->text('descripcion')->nullable();
         $table->string('logo')->nullable();
         $table->timestamps();
+        $table->foreignId('user_id')->constrained()->onDelete('restrict');
     });
 }
 

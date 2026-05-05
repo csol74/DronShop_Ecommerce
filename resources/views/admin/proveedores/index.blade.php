@@ -70,6 +70,29 @@
                             @endif
                         </div>
                     </td>
+                    <td>
+                        @if($prov->user)
+                            <span style="color:#4ade80;font-size:.82rem">
+                                ✓ {{ $prov->user->name }}
+                            </span>
+                        @else
+                            <form method="POST" action="{{ route('admin.proveedores.vincular', $prov) }}"
+                                style="display:flex;gap:.4rem;align-items:center">
+                                @csrf @method('PATCH')
+                                <select name="user_id" class="admin-select" style="font-size:.78rem;padding:.3rem .5rem">
+                                    <option value="">Sin vincular</option>
+                                    @foreach(\App\Models\User::where('role','proveedor')->get() as $u)
+                                        <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="btn-action success" title="Vincular">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        @endif
+                    </td>
                 </tr>
             @empty
                 <tr>

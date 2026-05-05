@@ -138,18 +138,41 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
+    <style>
+    /* Barra de progreso del paso actual */
+    .paso-progress-wrap {
+        margin-top: .5rem;
+        height: 4px;
+        background: var(--border);
+        border-radius: 2px;
+        overflow: hidden;
+    }
+    .paso-progress-bar {
+        height: 100%;
+        border-radius: 2px;
+        background: linear-gradient(90deg, var(--cyan-400), var(--gold-400));
+        transition: width 1s linear;
+        width: 0%;
+    }
+    .paso-timer {
+        font-size: .72rem;
+        color: var(--text-muted);
+        margin-top: .3rem;
+    }
+    </style>
+
     <script>
-    // ══════════════════════════════════════════════
-    // MAPA
-    // ══════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════
+    // MAPA LEAFLET
+    // ══════════════════════════════════════════════════════
     const map = L.map('tracking-map').setView([7.1254, -73.1198], 14);
 
-    L.tileLayer(
-        `https://{s}-tiles.locationiq.com/v3/darkmatter/r/{z}/{x}/{y}.png?key={{ config('services.locationiq.key') }}`,
-        { attribution: '©LocationIQ ©OpenStreetMap', subdomains: 'a', maxZoom: 19 }
-    ).addTo(map);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '©OpenStreetMap ©CartoDB',
+        subdomains: 'abcd', maxZoom: 19
+    }).addTo(map);
 
-    // Marcador bodega
+    // Marcador origen (bodega)
     L.marker([7.1254, -73.1198], {
         icon: L.divIcon({
             html: `<div style="background:#C9A84C;padding:3px 8px;border-radius:6px;
@@ -160,38 +183,79 @@
     }).addTo(map);
 
     // Marcador destino
-    let markerDestino = L.marker([7.1198, -73.1227], {
+    let markerDestino = L.marker([7.1254, -73.1198], { //origen temporal
         icon: L.divIcon({
             html: `<div style="background:#4ade80;padding:3px 8px;border-radius:6px;
                             color:#000;font-size:11px;font-weight:700;white-space:nowrap;
-                            box-shadow:0 2px 6px #0008">📍 {{ addslashes($orden->direccion_entrega) }}</div>`,
-            className: '', iconAnchor: [60, 20]
+                            box-shadow:0 2px 6px #0008">📍 {{ addslashes(Str::limit($orden->direccion_entrega, 25)) }}</div>`,
+            className: '', iconAnchor: [50, 20]
         })
     }).addTo(map);
 
     // Marcador vehículo
-    const vehiculoEmoji = '{{ $orden->transporte === "dron" ? "https://img.icons8.com/?size=100&id=HEGf1eAQiXfe&format=png&color=000000" : ($orden->transporte === "moto" ? "🏍️" : "🚗") }}';
-
+    const emoji = '{{ $orden->transporte === "dron" ? "🚁" : ($orden->transporte === "moto" ? "🏍️" : "🚗") }}';
     let markerVehiculo = L.marker([7.1254, -73.1198], {
         icon: L.divIcon({
-            html: `<div style="font-size:28px;filter:drop-shadow(0 2px 6px #000)">${vehiculoEmoji}</div>`,
-            iconSize: [32,32], className: '', iconAnchor: [16,16]
+            html: `<div style="font-size:28px;filter:drop-shadow(0 3px 8px #000);transition:all .5s ease">${emoji}</div>`,
+            iconSize: [32, 32], className: '', iconAnchor: [16, 16]
         })
     }).addTo(map);
 
-    // Línea ruta
-    let rutaLine = L.polyline(
-        [[7.1254, -73.1198], [7.1198, -73.1227]],
-        { color: '#C9A84C', weight: 3, opacity: .5, dashArray: '10,8' }
-    ).addTo(map);
+    // Línea de ruta punteada
+    let rutaLine = L.polyline([[7.1254, -73.1198], [7.1198, -73.1227]], {
+        color: '#C9A84C40', weight: 3, dashArray: '10,8'
+    }).addTo(map);
+
+    // Línea de progreso (rellena según avance)
+    let progresLine = L.polyline([[7.1254, -73.1198], [7.1254, -73.1198]], {
+        color: '#C9A84C', weight: 4, opacity: .85
+    }).addTo(map);
 
     let rutaActualizada = false;
+    let latO = 7.1254, lngO = -73.1198;
+    let latD = null, lngD = null;
 
-    // ══════════════════════════════════════════════
-    // ACTUALIZAR TIMELINE
-    // ══════════════════════════════════════════════
-    function renderTimeline(seguimiento, estadoActual) {
-        seguimiento.forEach(paso => {
+    // ══════════════════════════════════════════════════════
+    // MOVER VEHÍCULO SUAVEMENTE (interpolación cliente)
+    // El servidor da progreso 0.0→1.0, el cliente anima frame a frame
+    // ══════════════════════════════════════════════════════
+    let progresoActual  = 0;
+    let progresoObjetivo = 0;
+    let animFrameId     = null;
+
+    function animarVehiculo() {
+        if (Math.abs(progresoActual - progresoObjetivo) < 0.0001) {
+            progresoActual = progresoObjetivo;
+            animFrameId = null;
+            return;
+        }
+
+        // Lerp suave: acercarse 8% cada frame (~60fps)
+        progresoActual += (progresoObjetivo - progresoActual) * 0.02;
+
+        const lat = latO + (latD - latO) * progresoActual;
+        const lng = lngO + (lngD - lngO) * progresoActual;
+
+        markerVehiculo.setLatLng([lat, lng]);
+
+        // Dibujar línea de progreso recorrido
+        progresLine.setLatLngs([[latO, lngO], [lat, lng]]);
+
+        animFrameId = requestAnimationFrame(animarVehiculo);
+    }
+
+    function setProgresoObjetivo(p) {
+        progresoObjetivo = p;
+        if (!animFrameId) {
+            animFrameId = requestAnimationFrame(animarVehiculo);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // TIMELINE
+    // ══════════════════════════════════════════════════════
+    function renderTimeline(seguimiento, estadoActual, progresoPaso, segundosRestantes) {
+        seguimiento.forEach((paso, idx) => {
             const el = document.querySelector(`[data-estado="${paso.estado}"]`);
             if (!el) return;
 
@@ -199,39 +263,67 @@
             const content = el.querySelector('.timeline-step__content');
             const titulo  = el.querySelector('.timeline-step__titulo');
 
-            // Quitar clases previas
             el.classList.remove('done', 'active');
 
             if (paso.completado) {
-                // ✅ Paso completado
+                // ✅ Completado
                 el.classList.add('done');
                 if (dot) dot.innerHTML = '✅';
-                if (titulo) titulo.style.color = 'var(--text-primary)';
 
-                // Agregar timestamp si no existe
+                // Agregar timestamp
                 if (content && paso.tiempo && !el.querySelector('.timeline-step__time')) {
                     const t = document.createElement('div');
                     t.className = 'timeline-step__time';
-                    t.textContent = paso.tiempo;
+                    t.textContent = '✓ ' + paso.tiempo;
                     content.appendChild(t);
                 }
 
+                // Quitar barra de progreso si existe
+                const bar = el.querySelector('.paso-progress-wrap');
+                if (bar) bar.remove();
+
             } else if (paso.estado === estadoActual) {
-                // 🔄 Paso activo (en progreso)
+                // 🔄 Activo — mostrar barra de progreso y timer
                 el.classList.add('active');
-                if (titulo) titulo.style.color = 'var(--cyan-400)';
+
+                // Barra de progreso
+                let wrap = el.querySelector('.paso-progress-wrap');
+                if (!wrap) {
+                    wrap = document.createElement('div');
+                    wrap.className = 'paso-progress-wrap';
+                    wrap.innerHTML = `<div class="paso-progress-bar" id="progress-bar-${paso.estado}"></div>`;
+                    content.appendChild(wrap);
+
+                    const timer = document.createElement('div');
+                    timer.className = 'paso-timer';
+                    timer.id = `timer-${paso.estado}`;
+                    content.appendChild(timer);
+                }
+
+                const bar = document.getElementById(`progress-bar-${paso.estado}`);
+                if (bar) bar.style.width = progresoPaso + '%';
+
+                const timer = document.getElementById(`timer-${paso.estado}`);
+                if (timer) {
+                    const min = Math.floor(segundosRestantes / 60);
+                    const seg = segundosRestantes % 60;
+                    timer.textContent = min > 0
+                        ? `⏱ ${min}m ${seg}s para siguiente paso`
+                        : `⏱ ${seg}s para siguiente paso`;
+                }
 
             } else {
-                // ⏳ Paso pendiente
+                // ⏳ Pendiente
                 if (dot) dot.innerHTML = paso.icono;
-                if (titulo) titulo.style.color = 'var(--text-muted)';
+                const bar = el.querySelector('.paso-progress-wrap');
+                if (bar) bar.remove();
             }
         });
     }
 
-    // ══════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════
     // BANNER ENTREGADO
-    // ══════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════
     function mostrarBannerEntregado() {
         if (document.getElementById('banner-entregado')) return;
         const banner = document.createElement('div');
@@ -240,9 +332,9 @@
             position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);
             background:linear-gradient(135deg,#052e16,#16a34a);
             border:1px solid #4ade8060;border-radius:16px;
-            padding:1.25rem 2rem;color:#fff;font-family:'Syne',sans-serif;
-            font-size:1rem;font-weight:700;z-index:9999;
-            box-shadow:0 8px 32px #0008;
+            padding:1.25rem 2rem;color:#fff;
+            font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;
+            z-index:9999;box-shadow:0 8px 32px #0008;
             display:flex;align-items:center;gap:.75rem;
             animation:slideUp .4s ease;
         `;
@@ -251,7 +343,7 @@
             <div>
                 <div>¡Tu pedido fue entregado!</div>
                 <div style="font-weight:400;font-size:.82rem;color:#86efac;margin-top:.2rem">
-                    Gracias por comprar en DronShop
+                    Redirigiendo en 5 segundos...
                 </div>
             </div>
             <a href="{{ route('catalogo.index') }}"
@@ -262,18 +354,15 @@
             </a>
         `;
         document.body.appendChild(banner);
-
-        // Redirigir al detalle tras 8 segundos
-        setTimeout(() => {
-            window.location.href = '{{ route("orden.show", $orden) }}';
-        }, 8000);
+        setTimeout(() => { window.location.href = '{{ route("orden.show", $orden) }}'; }, 5000);
     }
 
-    // ══════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════
     // POLLING PRINCIPAL
-    // ══════════════════════════════════════════════
-    let ultimoEstado   = '{{ $orden->estado_entrega }}';
-    let pollingActivo  = true;
+    // ══════════════════════════════════════════════════════
+    let ultimoEstado  = '{{ $orden->estado_entrega }}';
+    let pollingActivo = true;
+    let enVuelo       = false;
 
     async function actualizarTracking() {
         if (!pollingActivo) return;
@@ -282,64 +371,63 @@
             const res = await fetch('{{ route("tracking.estado", $orden) }}', {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
             });
-
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
 
-            // -- Actualizar texto estado --
-            const estadoTxt = document.getElementById('estado-entrega-txt');
-            if (estadoTxt) {
-                estadoTxt.textContent = data.estado_entrega
-                    .replace(/_/g, ' ')
-                    .replace(/\b\w/g, l => l.toUpperCase());
-            }
+            // -- Texto estado actual --
+            const txt = document.getElementById('estado-entrega-txt');
+            if (txt) txt.textContent = data.estado_entrega
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, l => l.toUpperCase());
 
-            // -- Renderizar timeline --
-            renderTimeline(data.seguimiento, data.estado_entrega);
+            // -- Timeline con barra y timer --
+            renderTimeline(
+                data.seguimiento,
+                data.estado_entrega,
+                data.progreso_paso      ?? 0,
+                data.segundos_restantes ?? 0
+            );
 
-            // -- Notificación si cambió --
+            // -- Notificación si cambió estado --
             if (data.estado_entrega !== ultimoEstado) {
                 ultimoEstado = data.estado_entrega;
-                const paso = data.seguimiento.find(p => p.estado === data.estado_entrega);
-                if (paso && Notification.permission === 'granted') {
-                    new Notification('DronShop — ' + paso.titulo, {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    const paso = data.seguimiento.find(p => p.estado === data.estado_entrega);
+                    if (paso) new Notification('DronShop — ' + paso.titulo, {
                         body: paso.descripcion, icon: '/favicon.ico'
                     });
                 }
             }
 
-            // -- Actualizar mapa con coordenadas REALES del vuelo --
+            // -- Actualizar ruta real del vuelo (solo primera vez) --
             if (data.vuelo && !rutaActualizada) {
-                const latO = data.vuelo.lat_origen;
-                const lngO = data.vuelo.lng_origen;
-                const latD = data.vuelo.lat_destino;
-                const lngD = data.vuelo.lng_destino;
+                latO = data.vuelo.lat_origen;
+                lngO = data.vuelo.lng_origen;
+                latD = data.vuelo.lat_destino;
+                lngD = data.vuelo.lng_destino;
 
-                // Actualizar destino con coordenada geocodificada real
                 markerDestino.setLatLng([latD, lngD]);
                 rutaLine.setLatLngs([[latO, lngO], [latD, lngD]]);
+                progresLine.setLatLngs([[latO, lngO], [latO, lngO]]);
 
-                // Ajustar zoom para ver todo el trayecto
                 map.fitBounds([[latO, lngO], [latD, lngD]], { padding: [60, 60] });
-
                 rutaActualizada = true;
             }
 
-            // -- Mover vehículo --
-            if (data.posicion) {
-                markerVehiculo.setLatLng([data.posicion.lat, data.posicion.lng]);
+            // -- Mover vehículo suavemente con progreso del servidor --
+            if (data.progreso_movimiento !== null && data.progreso_movimiento !== undefined) {
+                setProgresoObjetivo(parseFloat(data.progreso_movimiento));
+                enVuelo = data.vuelo?.estado_mision === 'en_vuelo';
             }
 
             // -- Timestamp --
             const ms = document.getElementById('map-status');
             if (ms) ms.textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-CO');
 
-            // -- Si entregado: detener todo --
+            // -- Entregado --
             if (data.entregado) {
                 pollingActivo = false;
-                if (data.vuelo) {
-                    markerVehiculo.setLatLng([data.vuelo.lat_destino, data.vuelo.lng_destino]);
-                }
+                setProgresoObjetivo(1.0); // llegar al destino
                 mostrarBannerEntregado();
             }
 
@@ -348,24 +436,24 @@
         }
     }
 
-    // Pedir permiso notificaciones
+    // Permisos notificaciones
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
 
-    // Ejecutar inmediatamente y luego cada 4s
+    // Iniciar
     actualizarTracking();
-    const pollingInterval = setInterval(() => {
-        if (!pollingActivo) { clearInterval(pollingInterval); return; }
+    const pollingId = setInterval(() => {
+        if (!pollingActivo) { clearInterval(pollingId); return; }
         actualizarTracking();
     }, 4000);
 
-    // CSS animación
+    // CSS animación banner
     const s = document.createElement('style');
     s.textContent = `
         @keyframes slideUp {
             from { transform:translateX(-50%) translateY(20px); opacity:0; }
-            to   { transform:translateX(-50%) translateY(0);    opacity:1; }
+            to   { transform:translateX(-50%) translateY(0); opacity:1; }
         }
     `;
     document.head.appendChild(s);

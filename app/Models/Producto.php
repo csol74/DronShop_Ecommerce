@@ -29,4 +29,9 @@ class Producto extends Model
     {
         return '$ ' . number_format($this->precio, 0, ',', '.');
     }
+
+    public function scopeDelProveedor($query, int $proveedorId)
+    {
+        return $query->where('proveedor_id', $proveedorId);
+    }
 }

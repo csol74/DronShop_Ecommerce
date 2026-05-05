@@ -142,49 +142,5 @@
             </tbody>
         </table>
     </div>
-
-    <!-- Stock bajo -->
-    <div class="admin-table-wrap">
-        <div class="admin-table-toolbar">
-            <span class="admin-table-toolbar__title">⚠️ Alertas de stock</span>
-            <a href="{{ route('admin.productos.index') }}" class="btn btn-ghost" style="font-size:.8rem;padding:.4rem .8rem">
-                Gestionar →
-            </a>
-        </div>
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Stock</th>
-                    <th>Mínimo</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($productosBajoStock as $prod)
-                    <tr>
-                        <td>
-                            <a href="{{ route('admin.productos.edit', $prod) }}"
-                               style="color:var(--text-primary);font-weight:500;font-size:.85rem">
-                                {{ $prod->nombre }}
-                            </a>
-                        </td>
-                        <td>
-                            <span style="color:#F87171;font-family:'Syne',sans-serif;font-weight:700">
-                                {{ $prod->stock }}
-                            </span>
-                        </td>
-                        <td style="color:var(--text-muted)">{{ $prod->stock_minimo }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="3" style="text-align:center;color:var(--text-muted);padding:2rem">
-                            ✓ Todo el stock está en orden
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
 </div>
-
 @endsection

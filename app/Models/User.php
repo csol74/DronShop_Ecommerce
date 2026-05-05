@@ -55,8 +55,17 @@ class User extends Authenticatable
     {
         return $this->role === 'admin';
     }
+    public function isProveedor(): bool
+    {
+        return $this->role === 'proveedor';
+    }
     public function ordenes()
     {
         return $this->hasMany(\App\Models\Orden::class);
+    }
+
+    public function proveedor()
+    {
+        return $this->hasOne(\App\Models\Proveedor::class);
     }
 }

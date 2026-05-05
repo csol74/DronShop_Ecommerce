@@ -211,19 +211,26 @@ class DronController extends Controller
     public function apiEstado()
     {
         $dron = Dron::first();
+        $vuelo = VueloDron::where('estado_mision', 'en_vuelo')->latest()->first();
 
-        // Si está en vuelo, actualizar lat/lng interpolada en BD
-        if ($dron && $dron->estado === 'en_vuelo') {
-            $vuelo = VueloDron::where('estado_mision', 'en_vuelo')->latest()->first();
-            if ($vuelo && $vuelo->hora_despegue) {
-                $inicio   = $vuelo->hora_despegue->timestamp;
-                $ahora    = now()->timestamp;
-                $duracion = 60;
-                $progreso = min(($ahora - $inicio) / $duracion, 1.0);
+        $progreso = 0;
+        $posicion = null;
 
-                $latActual = (float) $vuelo->lat_origen + ((float) $vuelo->lat_destino - (float) $vuelo->lat_origen) * $progreso;
-                $lngActual = (float) $vuelo->lng_origen + ((float) $vuelo->lng_destino - (float) $vuelo->lng_origen) * $progreso;
+        if ($vuelo && $vuelo->hora_despegue) {
+            $inicio   = $vuelo->hora_despegue->timestamp;
+            $ahora    = now()->timestamp;
+            $duracion = 120; // igual que tracking
+            $progreso = min(($ahora - $inicio) / $duracion, 1.0);
 
+            $latActual = (float) $vuelo->lat_origen + ((float) $vuelo->lat_destino - (float) $vuelo->lat_origen) * $progreso;
+            $lngActual = (float) $vuelo->lng_origen + ((float) $vuelo->lng_destino - (float) $vuelo->lng_origen) * $progreso;
+
+            $posicion = [
+                'lat' => $latActual,
+                'lng' => $lngActual
+            ];
+
+            if ($dron) {
                 $dron->update([
                     'lat_actual' => $latActual,
                     'lng_actual' => $lngActual,
@@ -233,11 +240,22 @@ class DronController extends Controller
         }
 
         return response()->json([
-            'estado'             => $dron->estado,
-            'bateria_actual_pct' => $dron->bateria_actual_pct,
-            'lat_actual'         => $dron->lat_actual,
-            'lng_actual'         => $dron->lng_actual,
-            'estado_badge'       => $dron->estado_badge,
+            'estado'             => $dron?->estado,
+            'bateria_actual_pct' => $dron?->bateria_actual_pct,
+            'lat_actual'         => $dron?->lat_actual,
+            'lng_actual'         => $dron?->lng_actual,
+            'estado_badge'       => $dron?->estado_badge,
+
+            // Si hay un vuelo activo, incluir datos de origen/destino y estado de misión
+            'vuelo' => $vuelo ? [
+                'lat_origen'  => (float) $vuelo->lat_origen,
+                'lng_origen'  => (float) $vuelo->lng_origen,
+                'lat_destino' => (float) $vuelo->lat_destino,
+                'lng_destino' => (float) $vuelo->lng_destino,
+                'estado_mision' => $vuelo->estado_mision,
+            ] : null,
+
+            'progreso' => $progreso
         ]);
     }
 }

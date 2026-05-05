@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Notifications\RolActualizadoNotification;
 
 class UsuarioController extends Controller
 {
@@ -27,11 +28,32 @@ class UsuarioController extends Controller
 
     public function cambiarRol(Request $request, User $user)
     {
-        $request->validate(['role' => 'required|in:cliente,admin,proveedor']);
+        $request->validate([
+            'role' => 'required|in:cliente,admin,proveedor'
+        ]);
 
-        abort_if($user->id === auth()->id(), 403, 'No puedes cambiar tu propio rol.');
+        abort_if($user->id === auth()->id(), 403);
 
         $user->update(['role' => $request->role]);
-        return back()->with('success', "Rol de {$user->name} actualizado a: " . ucfirst($request->role));
+
+        // 🔥 SI ES PROVEEDOR → CREAR PROVEEDOR AUTOMÁTICO
+        if ($request->role === 'proveedor') {
+
+            if (!$user->proveedor) {
+                \App\Models\Proveedor::create([
+                    'nombre'   => $user->name,
+                    'empresa'  => 'Empresa de ' . $user->name,
+                    'email'    => $user->email,
+                    'telefono' => 'N/A',
+                    'pais'     => 'Colombia',
+                    'user_id'  => $user->id,
+                ]);
+            }
+        }
+
+        // 🔔 Notificación
+        $user->notify(new RolActualizadoNotification($request->role));
+
+        return back()->with('success', "Rol actualizado correctamente.");
     }
 }

@@ -1,17 +1,19 @@
 <?php
+
 use App\Http\Controllers\CatalogoController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CarritoController;
 use App\Http\Controllers\OrdenController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\ProductoController as AdminProductoController;
 use App\Http\Controllers\Admin\OrdenController as AdminOrdenController;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\ProveedorController as AdminProveedorController;
 use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\Admin\DronController;
 use App\Http\Controllers\Admin\MantenimientoController;
+use App\Http\Controllers\Proveedor\DashboardController as ProveedorDashboard;
+use App\Http\Controllers\Proveedor\ProductoController as ProveedorProducto;
 
 // Home → redirige al catálogo
 Route::get('/', fn() => redirect()->route('catalogo.index'));
@@ -20,83 +22,90 @@ Route::get('/', fn() => redirect()->route('catalogo.index'));
 Route::get('/catalogo', [CatalogoController::class, 'index'])->name('catalogo.index');
 Route::get('/catalogo/{slug}', [CatalogoController::class, 'show'])->name('catalogo.show');
 
-// Rutas autenticadas
+//REDIRECCIÓN POR ROL
 Route::get('/dashboard', function () {
-    if (auth()->user()->isAdmin()) {
-        return redirect()->route('admin.dashboard');
-    }
-    return redirect()->route('catalogo.index');
+
+    $user = auth()->user();
+
+    return match ($user->role) {
+        'admin' => redirect()->route('admin.dashboard'),
+        'proveedor' => redirect()->route('proveedor.dashboard'),
+        default => redirect()->route('catalogo.index'),
+    };
+
 })->middleware('auth')->name('dashboard');
 
-// Carrito
+// --- CARRITO ---
 Route::prefix('carrito')->name('carrito.')->middleware('auth')->group(function () {
-    Route::get('/',                              [CarritoController::class, 'index'])     ->name('index');
-    Route::post('/agregar/{producto}',           [CarritoController::class, 'agregar'])   ->name('agregar');
-    Route::patch('/actualizar/{carrito}',        [CarritoController::class, 'actualizar'])->name('actualizar');
-    Route::delete('/eliminar/{carrito}',         [CarritoController::class, 'eliminar'])  ->name('eliminar');
-    Route::delete('/vaciar',                     [CarritoController::class, 'vaciar'])    ->name('vaciar');
+    Route::get('/',                  [CarritoController::class, 'index'])      ->name('index');
+    Route::post('/agregar/{producto}',           [CarritoController::class, 'agregar'])    ->name('agregar');
+    Route::patch('/actualizar/{carrito}',        [CarritoController::class, 'actualizar']) ->name('actualizar');
+    Route::delete('/eliminar/{carrito}',         [CarritoController::class, 'eliminar'])   ->name('eliminar');
+    Route::delete('/vaciar',                     [CarritoController::class, 'vaciar'])     ->name('vaciar');
     Route::post('/transporte',                   [CarritoController::class, 'setTransporte'])->name('transporte');
 });
 
-// Órdenes
+// --- ÓRDENES (CLIENTE) ---
 Route::prefix('ordenes')->name('orden.')->middleware('auth')->group(function () {
-    Route::get('/checkout',          [OrdenController::class, 'checkout']) ->name('checkout');
-    Route::post('/store',            [OrdenController::class, 'store'])    ->name('store');
-    Route::get('/historial',         [OrdenController::class, 'historial'])->name('historial');
-    Route::get('/{orden}',           [OrdenController::class, 'show'])     ->name('show');
-    Route::get('/{orden}/pago',      [OrdenController::class, 'pago'])     ->name('pago');
-    Route::post('/{orden}/cancelar', [OrdenController::class, 'cancelar']) ->name('cancelar');
+    Route::get('/checkout',          [OrdenController::class, 'checkout'])  ->name('checkout');
+    Route::post('/store',            [OrdenController::class, 'store'])     ->name('store');
+    Route::get('/historial',         [OrdenController::class, 'historial']) ->name('historial');
+    Route::get('/{orden}',           [OrdenController::class, 'show'])      ->name('show');
+    Route::get('/{orden}/pago',      [OrdenController::class, 'pago'])      ->name('pago');
+    Route::post('/{orden}/cancelar', [OrdenController::class, 'cancelar'])  ->name('cancelar');
 });
 
-// Pagos MercadoPago
+// --- PAGOS ---
 Route::prefix('pago')->name('pago.')->group(function () {
     Route::post('/preferencia/{orden}', [PagoController::class, 'crearPreferencia'])->name('preferencia')->middleware('auth');
     Route::get('/success',              [PagoController::class, 'success'])           ->name('success');
     Route::get('/failure',              [PagoController::class, 'failure'])           ->name('failure');
     Route::get('/pending',              [PagoController::class, 'pending'])           ->name('pending');
-
-    // Eliminamos el withoutMiddleware porque ya lo configuramos en bootstrap/app.php
     Route::post('/webhook',             [PagoController::class, 'webhook'])           ->name('webhook');
 });
 
-// Rutas solo admin
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard',                            [DashboardController::class, 'index'])          ->name('dashboard');
-
-    // Productos
-    Route::get('/productos',                            [AdminProductoController::class, 'index'])       ->name('productos.index');
-    Route::get('/productos/crear',                      [AdminProductoController::class, 'create'])      ->name('productos.create');
-    Route::post('/productos',                           [AdminProductoController::class, 'store'])       ->name('productos.store');
-    Route::get('/productos/{producto}/editar',          [AdminProductoController::class, 'edit'])        ->name('productos.edit');
-    Route::put('/productos/{producto}',                 [AdminProductoController::class, 'update'])      ->name('productos.update');
-    Route::delete('/productos/{producto}',              [AdminProductoController::class, 'destroy'])     ->name('productos.destroy');
-    Route::patch('/productos/{producto}/toggle',        [AdminProductoController::class, 'toggleActivo'])->name('productos.toggle');
-
-    // Órdenes
-    Route::get('/ordenes',                              [AdminOrdenController::class, 'index'])          ->name('ordenes.index');
-    Route::get('/ordenes/{orden}',                      [AdminOrdenController::class, 'show'])           ->name('ordenes.show');
-    Route::patch('/ordenes/{orden}/estado',             [AdminOrdenController::class, 'actualizarEstado'])->name('ordenes.estado');
-
-    // Usuarios
-    Route::get('/usuarios',                             [UsuarioController::class, 'index'])             ->name('usuarios.index');
-    Route::patch('/usuarios/{user}/rol',                [UsuarioController::class, 'cambiarRol'])        ->name('usuarios.rol');
-
-    // Proveedores
-    Route::get('/proveedores',                          [AdminProveedorController::class, 'index'])      ->name('proveedores.index');
-    Route::get('/proveedores/crear',                    [AdminProveedorController::class, 'create'])     ->name('proveedores.create');
-    Route::post('/proveedores',                         [AdminProveedorController::class, 'store'])      ->name('proveedores.store');
-    Route::get('/proveedores/{proveedor}/editar',       [AdminProveedorController::class, 'edit'])       ->name('proveedores.edit');
-    Route::put('/proveedores/{proveedor}',              [AdminProveedorController::class, 'update'])     ->name('proveedores.update');
-    Route::delete('/proveedores/{proveedor}',           [AdminProveedorController::class, 'destroy'])    ->name('proveedores.destroy');
+// --- RUTAS DE PROVEEDOR (Y ADMIN) ---
+// Aquí gestionamos los productos. El Admin puede entrar porque incluimos 'admin' en el middleware.
+Route::middleware(['auth', 'role:proveedor,admin'])->prefix('proveedor')->name('proveedor.')->group(function () {
+    Route::get('/dashboard',                     [ProveedorDashboard::class, 'index'])       ->name('dashboard');
+    Route::get('/productos',                     [ProveedorProducto::class, 'index'])        ->name('productos.index');
+    Route::get('/productos/crear',               [ProveedorProducto::class, 'create'])       ->name('productos.create');
+    Route::post('/productos',                    [ProveedorProducto::class, 'store'])        ->name('productos.store');
+    Route::get('/productos/{producto}/editar',   [ProveedorProducto::class, 'edit'])         ->name('productos.edit');
+    Route::put('/productos/{producto}',          [ProveedorProducto::class, 'update'])       ->name('productos.update');
+    Route::patch('/productos/{producto}/toggle', [ProveedorProducto::class, 'toggleActivo'])->name('productos.toggle');
+    // Si necesitas eliminar productos, agrégalo aquí también:
+    Route::delete('/productos/{producto}',       [ProveedorProducto::class, 'destroy'])     ->name('productos.destroy');
 });
 
-// Tracking cliente
+// --- RUTAS SOLO ADMIN (GESTIÓN DE SISTEMA) ---
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Órdenes Globales
+    Route::get('/ordenes',                      [AdminOrdenController::class, 'index'])          ->name('ordenes.index');
+    Route::get('/ordenes/{orden}',              [AdminOrdenController::class, 'show'])           ->name('ordenes.show');
+    Route::patch('/ordenes/{orden}/estado',     [AdminOrdenController::class, 'actualizarEstado'])->name('ordenes.estado');
+
+    // Usuarios
+    Route::get('/usuarios',                     [UsuarioController::class, 'index'])             ->name('usuarios.index');
+    Route::patch('/usuarios/{user}/rol',        [UsuarioController::class, 'cambiarRol'])        ->name('usuarios.rol');
+
+    // Proveedores (Para que el Admin cree cuentas de proveedores)
+    Route::get('/proveedores',                  [AdminProveedorController::class, 'index'])      ->name('proveedores.index');
+    Route::get('/proveedores/crear',            [AdminProveedorController::class, 'create'])     ->name('proveedores.create');
+    Route::post('/proveedores',                 [AdminProveedorController::class, 'store'])      ->name('proveedores.store');
+    Route::get('/proveedores/{proveedor}/editar', [AdminProveedorController::class, 'edit'])     ->name('proveedores.edit');
+    Route::put('/proveedores/{proveedor}',      [AdminProveedorController::class, 'update'])     ->name('proveedores.update');
+    Route::delete('/proveedores/{proveedor}',   [AdminProveedorController::class, 'destroy'])    ->name('proveedores.destroy');
+});
+
+// --- TRACKING Y DRONES ---
 Route::middleware('auth')->group(function () {
     Route::get('/tracking/{orden}',        [TrackingController::class, 'index']) ->name('tracking.index');
     Route::get('/tracking/{orden}/estado', [TrackingController::class, 'estado'])->name('tracking.estado');
 });
 
-// Dron y monitoreo (admin + operario)
 Route::middleware(['auth', 'role:admin,operario'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dron',                          [DronController::class, 'index'])          ->name('dron.index');
     Route::get('/dron/editar',                   [DronController::class, 'editar'])         ->name('dron.editar');
@@ -111,4 +120,3 @@ Route::middleware(['auth', 'role:admin,operario'])->prefix('admin')->name('admin
 });
 
 require __DIR__ . '/auth.php';
-
