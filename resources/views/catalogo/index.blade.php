@@ -6,47 +6,11 @@
 <!-- Hero -->
 <section class="catalog-hero">
     <div class="catalog-hero__eyebrow">
-        <span>⚡</span> Entregas más rápidas 
+        <span>⚡</span> Entregas más rápidas
     </div>
     <h1 class="catalog-hero__title">Descubre lo mejor<br>en tecnología, deporte y moda</h1>
     <p class="catalog-hero__sub">Productos premium seleccionados de proveedores certificados. Entrega express por drones.</p>
 
-    <!-- Category Tabs -->
-    <div class="cat-tabs">
-        <a href="{{ route('catalogo.index') }}"
-           class="cat-tab {{ !request('categoria') ? 'active' : '' }}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-            </svg>
-            Todos
-        </a>
-        <a href="{{ route('catalogo.index', ['categoria' => 'electronica']) }}"
-           class="cat-tab {{ request('categoria') === 'electronica' ? 'active' : '' }}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
-            </svg>
-            Electrónica
-        </a>
-        <a href="{{ route('catalogo.index', ['categoria' => 'deporte']) }}"
-           class="cat-tab {{ request('categoria') === 'deporte' ? 'active' : '' }}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-            Deporte
-        </a>
-        <a href="{{ route('catalogo.index', ['categoria' => 'ropa']) }}"
-           class="cat-tab {{ request('categoria') === 'ropa' ? 'active' : '' }}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-            </svg>
-            Ropa
-        </a>
-    </div>
-</section>
 
 <!-- Layout principal -->
 <div class="catalog-layout">

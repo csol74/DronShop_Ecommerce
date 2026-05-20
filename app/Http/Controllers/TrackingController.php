@@ -2,12 +2,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Orden;
-use App\Models\VueloDron;
 use App\Models\SeguimientoOrden;
 
 class TrackingController extends Controller
 {
-    // Tiempo en segundos por cada paso
+    // Tiempo en segundos por cada paso de la simulación
     const SEGUNDOS_POR_PASO = 120;
 
     public function index(Orden $orden)
@@ -27,114 +26,127 @@ class TrackingController extends Controller
     {
         abort_if($orden->user_id !== auth()->id() && !auth()->user()->isAdmin(), 403);
 
-        // Recargar fresco
         $orden = Orden::with(['seguimiento', 'vuelo'])->find($orden->id);
-
-        // AUTO-AVANCE
-        if (!in_array($orden->estado_entrega, ['entregado', 'fallido', 'pendiente_pago'])) {
-            $pasoActual = $orden->seguimiento
-                ->where('estado', $orden->estado_entrega)
-                ->first();
-
-            if ($pasoActual) {
-                $referencia       = max(
-                    $pasoActual->created_at->timestamp,
-                    $pasoActual->updated_at->timestamp
-                );
-                $segundosEnEstado = now()->timestamp - $referencia;
-
-                if ($segundosEnEstado >= self::SEGUNDOS_POR_PASO) {
-                    \App\Http\Controllers\Admin\DronController::procesarAvance($orden);
-                    $orden = Orden::with(['seguimiento', 'vuelo'])->find($orden->id);
-                }
-            }
-        }
 
         $vuelo    = $orden->vuelo;
         $posicion = null;
-        $progreso = null; // 0.0 → 1.0 para animación del vehículo
+        $progreso = 0.0;
+        $vueloData = null;
 
-        // Calcular posición interpolada Y progreso para el frontend
-        if ($vuelo) {
+        $ahora = now()->timestamp;
+        $inicio = $ahora;
+
+        // 1. LÓGICA SI EL TRANSPORTE ES DRON (Usa la tabla vuelos)
+        if ($orden->transporte === 'dron' && $vuelo) {
             if ($vuelo->estado_mision === 'en_vuelo' && $vuelo->hora_despegue) {
                 $inicio   = $vuelo->hora_despegue->timestamp;
-                $ahora    = now()->timestamp;
-                // La duración del movimiento = tiempo del paso "en_camino"
-                $duracion = self::SEGUNDOS_POR_PASO;
-                $progreso = min(($ahora - $inicio) / $duracion, 1.0);
-
+                $progreso = min(($ahora - $inicio) / self::SEGUNDOS_POR_PASO, 1.0);
                 $posicion = [
-                    'lat' => (float) $vuelo->lat_origen + ((float) $vuelo->lat_destino - (float) $vuelo->lat_origen) * $progreso,
-                    'lng' => (float) $vuelo->lng_origen + ((float) $vuelo->lng_destino - (float) $vuelo->lng_origen) * $progreso,
+                    'lat' => (float)$vuelo->lat_origen + ((float)$vuelo->lat_destino - (float)$vuelo->lat_origen) * $progreso,
+                    'lng' => (float)$vuelo->lng_origen + ((float)$vuelo->lng_destino - (float)$vuelo->lng_origen) * $progreso,
                 ];
             } elseif ($vuelo->estado_mision === 'completado') {
                 $progreso = 1.0;
+                $posicion = ['lat' => (float)$vuelo->lat_destino, 'lng' => (float)$vuelo->lng_destino];
+            }
+
+            $vueloData = [
+                'estado_mision' => $vuelo->estado_mision,
+                'lat_origen'    => (float)$vuelo->lat_origen,
+                'lng_origen'    => (float)$vuelo->lng_origen,
+                'lat_destino'   => (float)$vuelo->lat_destino,
+                'lng_destino'   => (float)$vuelo->lng_destino,
+            ];
+
+        // 2. LÓGICA PARA MOTO O CARRO (Simulación matemática directa sobre la Orden)
+        } else {
+            // Buscamos el momento en que se marcó como 'recogido' (inicio del viaje)
+            $pasoRecogido = $orden->seguimiento->firstWhere('estado', 'recogido');
+
+            // Coordenadas de origen fijas (Tu bodega principal)
+            $latO = 7.1254;
+            $lngO = -73.1198;
+
+            // Coordenadas de destino dinámicas (guardadas previamente en la orden gracias a la dirección)
+            // Si no existen en tu DB, puedes usar estos fallbacks temporales para pruebas
+            $latD = (float)($orden->lat_destino ?? 7.1198);
+            $lngD = (float)($orden->lng_destino ?? -73.1227);
+
+            if (in_array($orden->estado_entrega, ['en_camino', 'cerca', 'entregado'])) {
+                if ($orden->estado_entrega === 'entregado') {
+                    $progreso = 1.0;
+                } else {
+                    $inicio   = $pasoRecogido && $pasoRecogido->completado ? $pasoRecogido->updated_at->timestamp : $ahora;
+                    $progreso = min(($ahora - $inicio) / self::SEGUNDOS_POR_PASO, 1.0);
+                }
+
                 $posicion = [
-                    'lat' => (float) $vuelo->lat_destino,
-                    'lng' => (float) $vuelo->lng_destino,
-                ];
-            } else {
-                // Programado pero aún no despegó
-                $progreso = 0.0;
-                $posicion = [
-                    'lat' => (float) $vuelo->lat_origen,
-                    'lng' => (float) $vuelo->lng_origen,
+                    'lat' => $latO + ($latD - $latO) * $progreso,
+                    'lng' => $lngO + ($lngD - $lngO) * $progreso,
                 ];
             }
+
+            // Simulamos la estructura 'vuelo' para que el JS del cliente funcione sin cambiar nada
+            $vueloData = [
+                'estado_mision' => in_array($orden->estado_entrega, ['en_camino', 'cerca']) ? 'en_vuelo' : ($orden->estado_entrega === 'entregado' ? 'completado' : 'pendiente'),
+                'lat_origen'    => $latO,
+                'lng_origen'    => $lngO,
+                'lat_destino'   => $latD,
+                'lng_destino'   => $lngD,
+            ];
         }
 
-        // Calcular progreso del paso actual para la barra de tiempo
-        $pasoActualFresh = $orden->seguimiento
-            ->where('estado', $orden->estado_entrega)
-            ->first();
+        // Calcular datos para las barras de progreso front-end de los pasos individuales
+        $tiempoTranscurrido = $ahora - $inicio;
+        $segundosRestantes  = max(self::SEGUNDOS_POR_PASO - $tiempoTranscurrido, 0);
+        $progresoPaso       = min(($tiempoTranscurrido / self::SEGUNDOS_POR_PASO) * 100, 100);
 
-        $progresoPaso = 0;
-        $segundosRestantes = self::SEGUNDOS_POR_PASO;
-
-        if ($pasoActualFresh && !in_array($orden->estado_entrega, ['entregado','fallido'])) {
-            $ref              = max($pasoActualFresh->created_at->timestamp, $pasoActualFresh->updated_at->timestamp);
-            $transcurridos    = now()->timestamp - $ref;
-            $progresoPaso     = min(round(($transcurridos / self::SEGUNDOS_POR_PASO) * 100), 100);
-            $segundosRestantes= max(self::SEGUNDOS_POR_PASO - $transcurridos, 0);
+        if (!in_array($orden->estado_entrega, ['en_camino', 'cerca'])) {
+            $segundosRestantes = 0;
+            $progresoPaso = 0;
         }
 
         $seguimientoData = $orden->seguimiento->map(fn($s) => [
-            'estado'      => $s->estado,
-            'titulo'      => $s->titulo,
-            'descripcion' => $s->descripcion,
-            'icono'       => $s->icono,
-            'completado'  => (bool) $s->completado,
-            'tiempo'      => $s->completado ? $s->updated_at->format('d/m/Y H:i') : null,
+            'estado'       => $s->estado,
+            'titulo'       => $s->titulo,
+            'descripcion'  => $s->descripcion,
+            'icono'        => $s->icono,
+            'completado'   => (bool) $s->completado,
+            'tiempo'       => $s->completado ? $s->updated_at->format('d/m/Y H:i') : null,
+            'foto_entrega' => $s->foto_entrega ? asset($s->foto_entrega) : null,
         ]);
 
         return response()->json([
-            'estado_entrega'     => $orden->estado_entrega,
-            'estado_orden'       => $orden->estado,
-            'entregado'          => in_array($orden->estado_entrega, ['entregado', 'fallido']),
-            'seguimiento'        => $seguimientoData,
-            'posicion'           => $posicion,
-            'progreso_movimiento'=> $progreso,        // 0.0 → 1.0 para el vehículo
-            'progreso_paso'      => $progresoPaso,    // 0 → 100 para la barra
-            'segundos_restantes' => $segundosRestantes,
-            'vuelo'              => $vuelo ? [
-                'estado_mision' => $vuelo->estado_mision,
-                'lat_origen'    => (float) $vuelo->lat_origen,
-                'lng_origen'    => (float) $vuelo->lng_origen,
-                'lat_destino'   => (float) $vuelo->lat_destino,
-                'lng_destino'   => (float) $vuelo->lng_destino,
-            ] : null,
-            'transporte'         => $orden->transporte,
+            'estado_entrega'      => $orden->estado_entrega,
+            'estado_orden'        => $orden->estado,
+            'entregado'           => in_array($orden->estado_entrega, ['entregado', 'fallido']),
+            'seguimiento'         => $seguimientoData,
+            'posicion'            => $posicion,
+            'progreso_movimiento' => $progreso,
+            'progreso_paso'       => $progresoPaso,
+            'segundos_restantes'  => $segundosRestantes,
+            'vuelo'               => $vueloData,
+            'transporte'          => $orden->transporte,
         ]);
     }
 
     public static function iniciarSeguimiento(Orden $orden): void
     {
-        if ($orden->seguimiento()->exists()) return;
+        // Si ya existe seguimiento Y estado_entrega es válido, no tocar
+        if (
+            $orden->seguimiento()->exists() &&
+            !in_array($orden->estado_entrega, ['pendiente_pago', null, ''])
+        ) {
+            return;
+        }
+
+        // Limpiar seguimiento anterior si estaba mal
+        $orden->seguimiento()->delete();
 
         $pasos = self::getPasosSegunTransporte($orden->transporte);
 
         foreach ($pasos as $i => $paso) {
-            SeguimientoOrden::create([
+            \App\Models\SeguimientoOrden::create([
                 'orden_id'    => $orden->id,
                 'estado'      => $paso['estado'],
                 'titulo'      => $paso['titulo'],
@@ -142,16 +154,16 @@ class TrackingController extends Controller
                 'icono'       => $paso['icono'],
                 'completado'  => $i === 0,
                 'created_at'  => now(),
-                'updated_at'  => $i === 0 ? now() : now()->subYear(),
+                'updated_at'  => now(),
             ]);
         }
 
+        // estado_entrega apunta al primer paso INCOMPLETO (índice 1 = empacando)
         Orden::where('id', $orden->id)->update([
-            'estado_entrega' => $pasos[0]['estado'],
+            'estado_entrega' => $pasos[1]['estado'],
             'estado'         => 'pagado',
         ]);
     }
-
     public static function getPasosSegunTransporte(string $transporte): array
     {
         $comunes = [
@@ -172,7 +184,7 @@ class TrackingController extends Controller
                 ['estado'=>'entregado','titulo'=>'¡Entregado!',    'descripcion'=>'Pedido entregado por mensajero en moto.',           'icono'=>'✅'],
             ],
             'carro'=> [
-                ['estado'=>'en_camino','titulo'=>'Vehículo en camino','descripcion'=>'El vehículo de reparto está en camino.',         'icono'=>'🚗'],
+                ['estado'=>'en_camino','titulo'=>'Vehículo en camino','descripcion'=>'El vehículo de reparto está en camino.',          'icono'=>'🚗'],
                 ['estado'=>'cerca',    'titulo'=>'Vehículo cerca',    'descripcion'=>'El vehículo está llegando a tu zona.',           'icono'=>'📍'],
                 ['estado'=>'entregado','titulo'=>'¡Entregado!',       'descripcion'=>'Pedido entregado por vehículo de reparto.',      'icono'=>'✅'],
             ],

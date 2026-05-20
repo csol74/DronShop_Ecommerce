@@ -1,4 +1,4 @@
-    @extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'Checkout')
 
 @section('content')
@@ -12,11 +12,14 @@
         <div class="flash flash-error">{{ $errors->first() }}</div>
     @endif
 
-    <form method="POST" action="{{ route('orden.store') }}">
+    <form method="POST" action="{{ route('orden.store') }}" id="checkout-form">
         @csrf
+
+        <input type="hidden" name="lat_destino" id="lat_destino_input">
+        <input type="hidden" name="lng_destino" id="lng_destino_input">
+
         <div class="checkout-grid">
             <div>
-                <!-- Dirección -->
                 <div class="checkout-section">
                     <div class="checkout-section__title">Datos de entrega</div>
 
@@ -43,14 +46,13 @@
                     </div>
                 </div>
 
-                <!-- Transporte -->
                 <div class="checkout-section">
                     <div class="checkout-section__title">Modalidad de transporte</div>
                     <div style="display:flex;flex-direction:column;gap:.5rem">
                         @foreach([
                             ['val'=>'dron',  'icon'=>'🚁', 'nombre'=>'Dron Express', 'desc'=>'Entrega en 2 horas', 'precio'=>15000],
                             ['val'=>'moto',  'icon'=>'🏍️', 'nombre'=>'Moto Rápido',  'desc'=>'Entrega en 4 horas', 'precio'=>8000],
-                            ['val'=>'carro', 'icon'=>'🚗', 'nombre'=>'Carro Seguro', 'desc'=>'Entrega en 6 horas', 'precio'=>12000],
+                            ['val'=>'carro', 'icon'=>'🚗', 'nombre'=>'Carro Seguro', 'desc'=>'Entrega en 6 hours', 'precio'=>12000],
                         ] as $op)
                             <label class="transport-opt">
                                 <input type="radio" name="transporte" value="{{ $op['val'] }}"
@@ -68,7 +70,6 @@
                     </div>
                 </div>
 
-                <!-- Productos -->
                 <div class="checkout-section">
                     <div class="checkout-section__title">Productos ({{ $items->count() }})</div>
                     <div class="checkout-items-mini">
@@ -90,7 +91,6 @@
                 </div>
             </div>
 
-            <!-- Resumen fijo -->
             <div>
                 <div class="cart-summary" style="position:sticky;top:90px">
                     <div class="cart-summary__title">Resumen final</div>
@@ -114,7 +114,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-gold" style="justify-content:center;padding:.9rem;font-size:1rem">
+                    <button type="submit" id="btn-submit-checkout" class="btn btn-gold" style="justify-content:center;padding:.9rem;font-size:1rem; width: 100%">
                         Confirmar y pagar →
                     </button>
 
@@ -127,4 +127,54 @@
         </div>
     </form>
 </div>
+
+@push('scripts')
+<script>
+document.getElementById('checkout-form').addEventListener('submit', async function(e) {
+    // 1. Detener el envío automático del formulario
+    e.preventDefault();
+
+    const form = this;
+    const btnSubmit = document.getElementById('btn-submit-checkout');
+
+    // Cambiar estática del botón para feedback visual del usuario
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = 'Ubicando dirección... 🧭';
+
+    // Obtener valores escritos por el cliente
+    const direccion = form.querySelector('input[name="direccion_entrega"]').value;
+    const ciudad = form.querySelector('input[name="ciudad"]').value;
+
+    // Estructurar la consulta para OpenStreetMap (Nominatim)
+    const query = `${direccion}, ${ciudad}, Colombia`;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+
+    try {
+        const response = await fetch(url, {
+            headers: { 'User-Agent': 'DronShopApp/1.0' } // Identificador requerido por las políticas de OpenStreetMap
+        });
+        const data = await response.json();
+
+        if (data && data.length > 0) {
+            // Si encuentra la dirección, inyecta las coordenadas reales
+            document.getElementById('lat_destino_input').value = data[0].lat;
+            document.getElementById('lng_destino_input').value = data[0].lon;
+            console.log(`Ubicación estructurada: Lat ${data[0].lat}, Lng ${data[0].lon}`);
+        } else {
+            // FALLBACK: Si no encuentra la dirección exacta (por nomenclatura compleja), usa el centro de Bucaramanga por defecto
+            document.getElementById('lat_destino_input').value = '7.1198';
+            document.getElementById('lng_destino_input').value = '-73.1227';
+        }
+    } catch (error) {
+        console.error("Error obteniendo coordenadas (Geocoding):", error);
+        // FALLBACK de seguridad en caso de caída de red o API bloqueada
+        document.getElementById('lat_destino_input').value = '7.1198';
+        document.getElementById('lng_destino_input').value = '-73.1227';
+    } finally {
+        // 2. Reanudar el envío del formulario con los nuevos datos cargados
+        form.submit();
+    }
+});
+</script>
+@endpush
 @endsection

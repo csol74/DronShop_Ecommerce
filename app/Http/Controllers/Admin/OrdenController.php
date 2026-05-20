@@ -41,14 +41,28 @@ class OrdenController extends Controller
         return view('admin.ordenes.show', compact('orden'));
     }
 
-    public function actualizarEstado(Request $request, Orden $orden)
+    public function asignarLogistica(Request $request, Orden $orden)
     {
         $request->validate([
-            'estado' => 'required|in:pendiente,pagado,en_despacho,entregado,cancelado',
+            'logistica_user_id' => 'nullable|exists:users,id'
         ]);
 
-        $orden->update(['estado' => $request->estado]);
+        $orden->update([
+            'logistica_user_id' => $request->logistica_user_id ?: null
+        ]);
 
-        return back()->with('success', "Orden {$orden->codigo} actualizada a: " . ucfirst($request->estado));
+        $orden->refresh();
+
+        // Iniciar o corregir seguimiento si está en estado inválido
+        if (in_array($orden->estado, ['pagado', 'en_despacho'])) {
+            if (
+                !$orden->seguimiento()->exists() ||
+                in_array($orden->estado_entrega, ['pendiente_pago', null, ''])
+            ) {
+                \App\Http\Controllers\TrackingController::iniciarSeguimiento($orden);
+            }
+        }
+
+        return back()->with('success', '✓ Logístico asignado. La orden ya aparece en su panel.');
     }
 }

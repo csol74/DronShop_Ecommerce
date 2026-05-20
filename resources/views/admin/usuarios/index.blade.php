@@ -77,7 +77,7 @@
                                   style="display:flex;gap:.5rem;align-items:center">
                                 @csrf @method('PATCH')
                                 <select name="role" class="admin-select" style="font-size:.8rem">
-                                    @foreach(['cliente','admin','proveedor'] as $r)
+                                    @foreach(['cliente','admin','proveedor','logistica'] as $r)
                                         <option value="{{ $r }}" {{ $user->role === $r ? 'selected' : '' }}>
                                             {{ ucfirst($r) }}
                                         </option>

@@ -10,6 +10,7 @@ class Orden extends Model
         'subtotal', 'costo_envio', 'iva', 'total',
         'direccion_entrega', 'ciudad', 'notas',
         'mp_preference_id', 'mp_payment_id', 'mp_status',
+        'logistica_user_id', 'estado_entrega', 'lat_destino', 'lng_destino',
     ];
     protected $table = 'ordenes';
 
@@ -18,6 +19,8 @@ class Orden extends Model
         'costo_envio' => 'decimal:2',
         'iva'         => 'decimal:2',
         'total'       => 'decimal:2',
+        'lat_destino' => 'float',  
+        'lng_destino' => 'float',
     ];
 
     public function user()

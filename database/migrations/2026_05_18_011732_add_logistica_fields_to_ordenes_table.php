@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['cliente', 'admin', 'logistica', 'proveedor'])->default('cliente');
+        Schema::table('ordenes', function (Blueprint $table) {
+            $table->foreignId('logistica_user_id')->nullable()->constrained('users')->onDelete('set null')->after('estado_entrega');
         });
     }
 
@@ -21,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('ordenes', function (Blueprint $table) {
             //
         });
     }

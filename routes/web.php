@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\Logistica\DashboardController as LogisticaDashboard;
+use App\Http\Controllers\Logistica\EntregaController;
+use App\Http\Controllers\NosotrosController;
+use App\Http\Controllers\SkyPassController;
 use App\Http\Controllers\CatalogoController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CarritoController;
@@ -14,6 +18,7 @@ use App\Http\Controllers\Admin\DronController;
 use App\Http\Controllers\Admin\MantenimientoController;
 use App\Http\Controllers\Proveedor\DashboardController as ProveedorDashboard;
 use App\Http\Controllers\Proveedor\ProductoController as ProveedorProducto;
+
 
 // Home → redirige al catálogo
 Route::get('/', fn() => redirect()->route('catalogo.index'));
@@ -30,6 +35,7 @@ Route::get('/dashboard', function () {
     return match ($user->role) {
         'admin' => redirect()->route('admin.dashboard'),
         'proveedor' => redirect()->route('proveedor.dashboard'),
+        'logistica' => redirect()->route('logistica.dashboard'),
         default => redirect()->route('catalogo.index'),
     };
 
@@ -85,7 +91,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Órdenes Globales
     Route::get('/ordenes',                      [AdminOrdenController::class, 'index'])          ->name('ordenes.index');
     Route::get('/ordenes/{orden}',              [AdminOrdenController::class, 'show'])           ->name('ordenes.show');
-    Route::patch('/ordenes/{orden}/estado',     [AdminOrdenController::class, 'actualizarEstado'])->name('ordenes.estado');
+    Route::patch('/ordenes/{orden}/asignar-logistica', [AdminOrdenController::class, 'asignarLogistica'])->name('ordenes.asignar-logistica');
 
     // Usuarios
     Route::get('/usuarios',                     [UsuarioController::class, 'index'])             ->name('usuarios.index');
@@ -98,6 +104,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/proveedores/{proveedor}/editar', [AdminProveedorController::class, 'edit'])     ->name('proveedores.edit');
     Route::put('/proveedores/{proveedor}',      [AdminProveedorController::class, 'update'])     ->name('proveedores.update');
     Route::delete('/proveedores/{proveedor}',   [AdminProveedorController::class, 'destroy'])    ->name('proveedores.destroy');
+});
+
+
+// --- RUTAS DE LOGÍSTICA ---
+Route::middleware(['auth', 'role:logistica,admin'])->prefix('logistica')->name('logistica.')->group(function () {
+    Route::get('/dashboard',                          [LogisticaDashboard::class, 'index'])         ->name('dashboard');
+    Route::get('/entrega/{orden}',                    [EntregaController::class,  'show'])           ->name('entrega.show');
+    Route::post('/entrega/{orden}/tomar',             [EntregaController::class,  'tomar'])          ->name('entrega.tomar');
+    Route::post('/entrega/{orden}/avanzar',           [EntregaController::class,  'avanzarPaso'])    ->name('entrega.avanzar');
+    Route::post('/entrega/{orden}/confirmar',         [EntregaController::class,  'confirmarEntrega'])->name('entrega.confirmar');
 });
 
 // --- TRACKING Y DRONES ---
@@ -118,5 +134,15 @@ Route::middleware(['auth', 'role:admin,operario'])->prefix('admin')->name('admin
     Route::post('/mantenimiento',                [MantenimientoController::class, 'store'])    ->name('mantenimiento.store');
     Route::patch('/mantenimiento/{mantenimiento}',[MantenimientoController::class, 'actualizar'])->name('mantenimiento.actualizar');
 });
+
+// Pública
+Route::get('/nosotros', [NosotrosController::class, 'index'])->name('nosotros');
+
+// SkyPass
+Route::get('/skypass',          [SkyPassController::class, 'index'])   ->name('skypass.index');
+Route::post('/skypass/suscribir',[SkyPassController::class, 'suscribir'])->name('skypass.suscribir')->middleware('auth');
+Route::get('/skypass/success',  [SkyPassController::class, 'success'])  ->name('skypass.success')->middleware('auth');
+Route::get('/skypass/failure',  [SkyPassController::class, 'failure'])  ->name('skypass.failure');
+Route::post('/skypass/cancelar',[SkyPassController::class, 'cancelar']) ->name('skypass.cancelar')->middleware('auth');
 
 require __DIR__ . '/auth.php';

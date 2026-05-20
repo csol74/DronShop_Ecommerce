@@ -29,14 +29,14 @@ class UsuarioController extends Controller
     public function cambiarRol(Request $request, User $user)
     {
         $request->validate([
-            'role' => 'required|in:cliente,admin,proveedor'
+            'role' => 'required|in:cliente,admin,proveedor,logistica',
         ]);
 
         abort_if($user->id === auth()->id(), 403);
 
         $user->update(['role' => $request->role]);
 
-        // 🔥 SI ES PROVEEDOR → CREAR PROVEEDOR AUTOMÁTICO
+        // SI ES PROVEEDOR → CREAR PROVEEDOR AUTOMÁTICO
         if ($request->role === 'proveedor') {
 
             if (!$user->proveedor) {

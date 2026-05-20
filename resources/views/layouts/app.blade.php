@@ -28,45 +28,57 @@
     </form>
 
     <ul class="ds-navbar__nav">
-        <li><a href="{{ route('catalogo.index') }}"
-               class="{{ request()->routeIs('catalogo.*') ? 'active' : '' }}">Catálogo</a></li>
-        <li><a href="{{ route('catalogo.index', ['categoria' => 'electronica']) }}">Electrónica</a></li>
-        <li><a href="{{ route('catalogo.index', ['categoria' => 'deporte']) }}">Deporte</a></li>
-        <li><a href="{{ route('catalogo.index', ['categoria' => 'ropa']) }}">Ropa</a></li>
-    </ul>
+    <a href="{{ route('catalogo.index') }}"
+       class="{{ request()->routeIs('catalogo.*') ? 'active' : '' }}">Catálogo</a>
+    <a href="{{ route('nosotros') }}"
+       class="{{ request()->routeIs('nosotros') ? 'active' : '' }}">Nosotros</a>
+    <a href="{{ route('skypass.index') }}"
+       class="{{ request()->routeIs('skypass.*') ? 'active' : '' }}">SkyPass</a>
+</ul>
 
-    <div class="ds-navbar__actions">
-        @auth
-            <!-- Carrito con badge -->
-            <a href="{{ route('carrito.index') }}" class="btn-icon cart-badge">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                </svg>
-                @php $totalCarrito = \App\Http\Controllers\CarritoController::contarItems(); @endphp
-                @if($totalCarrito > 0)
-                    <span class="cart-badge__count">{{ $totalCarrito > 9 ? '9+' : $totalCarrito }}</span>
+        <div class="ds-navbar__actions">
+            @auth
+                <!-- Beneficio SkyPass -->
+                @if(auth()->user()->tieneSkyPass())
+                    <a href="{{ route('skypass.index') }}"
+                    style="display:inline-flex;align-items:center;gap:.35rem;
+                            background:linear-gradient(135deg,var(--gold-600),var(--gold-500));
+                            color:#0a0a0a;font-size:.72rem;font-weight:700;
+                            padding:.3rem .75rem;border-radius:100px;text-decoration:none">
+                        ✦ SkyPass
+                    </a>
                 @endif
-            </a>
 
-            <!-- Historial órdenes -->
-            <a href="{{ route('orden.historial') }}" class="btn btn-ghost" style="font-size:.85rem">
-                Mis pedidos
-            </a>
+                <!-- Carrito con badge -->
+                <a href="{{ route('carrito.index') }}" class="btn-icon cart-badge">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                    </svg>
+                    @php $totalCarrito = \App\Http\Controllers\CarritoController::contarItems(); @endphp
+                    @if($totalCarrito > 0)
+                        <span class="cart-badge__count">{{ $totalCarrito > 9 ? '9+' : $totalCarrito }}</span>
+                    @endif
+                </a>
 
-            @if(auth()->user()->role === 'admin')
-                <a href="{{ route('admin.dashboard') }}" class="btn btn-ghost" style="font-size:.8rem">⚙️ Admin</a>
-            @endif
+                <!-- Historial órdenes -->
+                <a href="{{ route('orden.historial') }}" class="btn btn-ghost" style="font-size:.85rem">
+                    Mis pedidos
+                </a>
 
-            <form method="POST" action="{{ route('logout') }}" style="margin:0">
-                @csrf
-                <button type="submit" class="btn btn-ghost">Salir</button>
-            </form>
-        @else
-            <a href="{{ route('login') }}" class="btn btn-ghost">Ingresar</a>
-            <a href="{{ route('register') }}" class="btn btn-gold">Registrarse</a>
-        @endauth
-    </div>
+                @if(auth()->user()->role === 'admin')
+                    <a href="{{ route('admin.dashboard') }}" class="btn btn-ghost" style="font-size:.8rem">⚙️ Admin</a>
+                @endif
+
+                <form method="POST" action="{{ route('logout') }}" style="margin:0">
+                    @csrf
+                    <button type="submit" class="btn btn-ghost">Salir</button>
+                </form>
+            @else
+                <a href="{{ route('login') }}" class="btn btn-ghost">Ingresar</a>
+                <a href="{{ route('register') }}" class="btn btn-gold">Registrarse</a>
+            @endauth
+        </div>
 </nav>
 
 <!-- ═══════════ CONTENT ═══════════ -->

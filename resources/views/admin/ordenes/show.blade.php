@@ -91,6 +91,40 @@
                     <span>Total</span>
                     <span class="val">$ {{ number_format($orden->total, 0, ',', '.') }}</span>
                 </div>
+        <!-- Asignar logístico -->
+        <div class="admin-form-section" style="margin-top:1.25rem">
+            <div class="admin-form-section__head">🚚 Logístico asignado</div>
+            <div class="admin-form-section__body">
+                @if($orden->logistica_user_id)
+                    <div style="font-size:.875rem;color:var(--text-primary);margin-bottom:.75rem">
+                         {{ \App\Models\User::find($orden->logistica_user_id)?->name }}
+                    </div>
+                @else
+                    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:.75rem">
+                        Sin logístico asignado aún.
+                    </p>
+                @endif
+
+                <form method="POST" action="{{ route('admin.ordenes.asignar-logistica', $orden) }}">
+                    @csrf @method('PATCH')
+                    <div class="form-group" style="margin-bottom:.75rem">
+                        <select name="logistica_user_id" class="form-control admin-select" style="width:100%">
+                            <option value="">Sin asignar</option>
+                            @foreach(\App\Models\User::where('role','logistica')->get() as $u)
+                                <option value="{{ $u->id }}"
+                                    {{ $orden->logistica_user_id == $u->id ? 'selected':'' }}>
+                                    {{ $u->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-ghost"
+                            style="width:100%;justify-content:center;font-size:.85rem">
+                        Asignar logístico
+                    </button>
+                </form>
+            </div>
+        </div>
 
                 @if($orden->mp_payment_id)
                     <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);
@@ -101,9 +135,6 @@
                 @endif
             </div>
         </div>
-
-        <!-- Cambiar estado -->
-        <div class="admin-form-section">
             <div class="admin-form-section__head">🔄 Gestión de estado</div>
             <div class="admin-form-section__body">
                 <div style="margin-bottom:1rem">
@@ -114,23 +145,6 @@
                         ● {{ $badge['label'] }}
                     </span>
                 </div>
-
-                <form method="POST" action="{{ route('admin.ordenes.estado', $orden) }}">
-                    @csrf @method('PATCH')
-                    <div class="form-group" style="margin-bottom:.75rem">
-                        <label class="form-label">Cambiar a</label>
-                        <select name="estado" class="form-control admin-select" style="width:100%">
-                            @foreach(['pendiente','pagado','en_despacho','entregado','cancelado'] as $est)
-                                <option value="{{ $est }}" {{ $orden->estado === $est ? 'selected' : '' }}>
-                                    {{ ucfirst(str_replace('_', ' ', $est)) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-gold" style="width:100%;justify-content:center">
-                        Actualizar estado
-                    </button>
-                </form>
             </div>
         </div>
     </div>

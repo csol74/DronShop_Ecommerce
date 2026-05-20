@@ -12,7 +12,7 @@ class DronShopSeeder extends Seeder
     public function run(): void
     {
         // =========================
-        // 👑 ADMIN
+        //  ADMIN
         // =========================
         DB::table('users')->insert([
             'name' => 'Admin DronShop',
@@ -21,9 +21,21 @@ class DronShopSeeder extends Seeder
             'role' => 'admin',
             'created_at' => now(),
         ]);
+        // =========================
+        //  LOGÍSTICA
+        // =========================
+
+        DB::table('users')->insert([
+            'name'       => 'Logística DronShop',
+            'email'      => 'logistica@dronshop.com',
+            'password'   => Hash::make('logistica123'),
+            'role'       => 'logistica',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         // =========================
-        // 👤 CLIENTE
+        // CLIENTE
         // =========================
         DB::table('users')->insert([
             'name' => 'Cliente Demo',
@@ -34,7 +46,7 @@ class DronShopSeeder extends Seeder
         ]);
 
         // =========================
-        // 📦 CATEGORÍAS
+        //  CATEGORÍAS
         // =========================
         $catElectronica = DB::table('categorias')->insertGetId([
             'nombre' => 'Electrónica',
@@ -58,7 +70,7 @@ class DronShopSeeder extends Seeder
         ]);
 
         // =========================
-        // 🏢 PROVEEDORES + USERS
+        // PROVEEDORES + USERS
         // =========================
 
         // 🔹 PROVEEDOR 1
@@ -103,7 +115,7 @@ class DronShopSeeder extends Seeder
             'created_at' => now(),
         ]);
 
-        // 🔹 PROVEEDOR 3
+        //  PROVEEDOR 3
         $user3 = DB::table('users')->insertGetId([
             'name' => 'Andrés Palomino',
             'email' => 'proveedor3@dronshop.com',

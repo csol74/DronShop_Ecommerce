@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Carrito;
@@ -12,6 +13,7 @@ class OrdenController extends Controller
 {
     public function checkout()
     {
+        // 1. Obtener los productos del carrito del usuario autenticado
         $items = Carrito::with('producto')
             ->where('user_id', auth()->id())
             ->get();
@@ -20,24 +22,41 @@ class OrdenController extends Controller
             return redirect()->route('carrito.index')->with('error', 'Tu carrito está vacío.');
         }
 
-        $transporte = session('transporte', 'moto');
-        $subtotal   = $items->sum(fn($i) => $i->cantidad * $i->producto->precio);
-        $costoEnvio = CarritoController::calcularEnvio($transporte, $subtotal);
-        $iva        = round($subtotal * 0.19, 2);
-        $total      = $subtotal + $costoEnvio + $iva;
+        // 2. Verificar suscripción SkyPass y aplicar beneficios
+        $usuario   = auth()->user();
+        $tieneSP   = $usuario->tieneSkyPass();
+        $descuento = 0;
 
-        return view('orden.checkout', compact('items', 'transporte', 'subtotal', 'costoEnvio', 'iva', 'total'));
+        $subtotal  = $items->sum(fn($i) => $i->cantidad * $i->producto->precio);
+
+        if ($tieneSP) {
+            $descuento = round($subtotal * 0.10, 2); // 10% de descuento en productos
+        }
+
+        // Si tiene SkyPass el envío es 0, de lo contrario se calcula según el transporte (por defecto moto)
+        $transporte = session('transporte', 'moto');
+        $costoEnvio = $tieneSP ? 0 : CarritoController::calcularEnvio($transporte, $subtotal);
+
+        // El IVA se calcula sobre el subtotal ya neto (restando el descuento)
+        $iva        = round(($subtotal - $descuento) * 0.19, 2);
+        $total      = $subtotal - $descuento + $costoEnvio + $iva;
+
+        return view('orden.checkout', compact('items', 'transporte', 'subtotal', 'descuento', 'costoEnvio', 'iva', 'total'));
     }
 
     public function store(Request $request)
     {
+        // 1. Validar el formulario de entrega y transporte (¡Ya estaba perfecto!)
         $request->validate([
             'direccion_entrega' => 'required|string|max:255',
             'ciudad'            => 'required|string|max:100',
             'transporte'        => 'required|in:dron,moto,carro',
             'notas'             => 'nullable|string|max:500',
+            'lat_destino'       => 'nullable|numeric',
+            'lng_destino'       => 'nullable|numeric',
         ]);
 
+        // 2. Obtener los productos del carrito
         $items = Carrito::with('producto')
             ->where('user_id', auth()->id())
             ->get();
@@ -46,33 +65,51 @@ class OrdenController extends Controller
             return redirect()->route('carrito.index')->with('error', 'Tu carrito está vacío.');
         }
 
-        // Verificar stock antes de crear
+        // 3. Verificar que haya stock suficiente para procesar la orden
         foreach ($items as $item) {
             if ($item->cantidad > $item->producto->stock) {
                 return back()->with('error', "Stock insuficiente para: {$item->producto->nombre}");
             }
         }
 
-        $subtotal   = $items->sum(fn($i) => $i->cantidad * $i->producto->precio);
-        $costoEnvio = CarritoController::calcularEnvio($request->transporte, $subtotal);
-        $iva        = round($subtotal * 0.19, 2);
-        $total      = $subtotal + $costoEnvio + $iva;
+        // 4. Recalcular costos en el servidor aplicando beneficios de SkyPass
+        $usuario   = auth()->user();
+        $tieneSP   = $usuario->tieneSkyPass();
+        $descuento = 0;
 
-        DB::transaction(function () use ($request, $items, $subtotal, $costoEnvio, $iva, $total, &$orden) {
+        $subtotal  = $items->sum(fn($i) => $i->cantidad * $i->producto->precio);
+
+        if ($tieneSP) {
+            $descuento = round($subtotal * 0.10, 2); // 10% descuento
+        }
+
+        // Envío gratis si es SkyPass, si no, se calcula con el transporte seleccionado en el Request
+        $costoEnvio = $tieneSP ? 0 : CarritoController::calcularEnvio($request->transporte, $subtotal);
+        $iva        = round(($subtotal - $descuento) * 0.19, 2);
+        $total      = $subtotal - $descuento + $costoEnvio + $iva;
+
+        // 5. Transacción de Base de Datos para asegurar la integridad de la compra
+        DB::transaction(function () use ($request, $items, $subtotal, $descuento, $costoEnvio, $iva, $total, &$orden) {
             $orden = Orden::create([
                 'codigo'            => Orden::generarCodigo(),
                 'user_id'           => auth()->id(),
                 'estado'            => 'pendiente',
                 'transporte'        => $request->transporte,
                 'subtotal'          => $subtotal,
+                'descuento'         => $descuento,
                 'costo_envio'       => $costoEnvio,
                 'iva'               => $iva,
                 'total'             => $total,
                 'direccion_entrega' => $request->direccion_entrega,
                 'ciudad'            => $request->ciudad,
                 'notas'             => $request->notas,
+
+                // 🗺️ LOGÍSTICA: Guardamos las coordenadas obtenidas en el frontend
+                'lat_destino'       => $request->lat_destino,
+                'lng_destino'       => $request->lng_destino,
             ]);
 
+            // Registrar cada producto de forma independiente en la tabla de ítems de la orden
             foreach ($items as $item) {
                 OrdenItem::create([
                     'orden_id'        => $orden->id,
@@ -83,11 +120,11 @@ class OrdenController extends Controller
                     'subtotal'        => $item->cantidad * $item->producto->precio,
                 ]);
 
-                // Descontar stock
+                // Descontar las unidades del stock del producto
                 $item->producto->decrement('stock', $item->cantidad);
             }
 
-            // Vaciar carrito
+            // Limpiar los datos temporales del carrito y la sesión de transporte
             Carrito::where('user_id', auth()->id())->delete();
             session()->forget('transporte');
         });
@@ -97,22 +134,25 @@ class OrdenController extends Controller
 
     public function pago(Orden $orden)
     {
+        // Evitar que un usuario vea pasarelas de pago de terceros
         abort_if($orden->user_id !== auth()->id(), 403);
         return view('orden.pago', compact('orden'));
     }
 
     public function historial()
     {
+        // Obtener órdenes del usuario con paginación de 10 registros
         $ordenes = Orden::with(['items', 'seguimiento'])
-        ->where('user_id', auth()->id())
-        ->latest()
-        ->paginate(10);
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->paginate(10);
 
         return view('orden.historial', compact('ordenes'));
     }
 
     public function show(Orden $orden)
     {
+        // Permitir visualización solo al dueño de la orden o al Administrador del sistema
         abort_if($orden->user_id !== auth()->id() && !auth()->user()->isAdmin(), 403);
         $orden->load('items.producto', 'user');
         return view('orden.show', compact('orden'));
@@ -126,8 +166,8 @@ class OrdenController extends Controller
             return back()->with('error', 'Solo puedes cancelar órdenes en estado Pendiente.');
         }
 
+        // Devolver las cantidades retenidas al stock general si se cancela antes de pagar
         DB::transaction(function () use ($orden) {
-            // Restaurar stock
             foreach ($orden->items as $item) {
                 $item->producto->increment('stock', $item->cantidad);
             }

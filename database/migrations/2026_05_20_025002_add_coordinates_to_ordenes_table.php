@@ -9,10 +9,11 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['cliente', 'admin', 'logistica', 'proveedor'])->default('cliente');
+        Schema::table('ordenes', function (Blueprint $table) {
+            $table->decimal('lat_destino', 10, 8)->nullable()->after('estado_entrega');
+            $table->decimal('lng_destino', 11, 8)->nullable()->after('lat_destino');
         });
     }
 
@@ -21,7 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('ordenes', function (Blueprint $table) {
             //
         });
     }

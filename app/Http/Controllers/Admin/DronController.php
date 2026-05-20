@@ -130,7 +130,7 @@ class DronController extends Controller
         return true;
     }
 
-   private function gestionarVueloDron(Orden $orden, string $estado): void
+   public function gestionarVueloDron(Orden $orden, string $estado): void
     {
         $dron = \App\Models\Dron::first();
         if (!$dron) return;

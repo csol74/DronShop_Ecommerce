@@ -282,6 +282,26 @@
                 const bar = el.querySelector('.paso-progress-wrap');
                 if (bar) bar.remove();
 
+                // Mostrar foto de entrega si existe
+                if (paso.completado && paso.foto_entrega && paso.estado === 'entregado') {
+                    const contentInner = el.querySelector('.timeline-step__content');
+                    if (contentInner && !contentInner.querySelector('.foto-entrega-wrap')) {
+                        const wrap = document.createElement('div');
+                        wrap.className = 'foto-entrega-wrap';
+                        wrap.style.cssText = 'margin-top:.75rem';
+                        wrap.innerHTML = `
+                            <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.4rem">
+                                📷 Foto de confirmación de entrega:
+                            </div>
+                            <img src="${paso.foto_entrega}"
+                                 style="width:100%;max-width:260px;height:160px;object-fit:cover;
+                                        border-radius:10px;border:1px solid var(--gold-600);cursor:pointer"
+                                 onclick="window.open('${paso.foto_entrega}','_blank')">
+                        `;
+                        contentInner.appendChild(wrap);
+                    }
+                }
+
             } else if (paso.estado === estadoActual) {
                 // 🔄 Activo — mostrar barra de progreso y timer
                 el.classList.add('active');
