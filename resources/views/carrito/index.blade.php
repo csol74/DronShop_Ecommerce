@@ -115,6 +115,11 @@
                     <div style="font-size:.78rem;font-weight:600;text-transform:uppercase;
                                 letter-spacing:.1em;color:var(--text-muted);margin-bottom:.75rem">
                         Modalidad de entrega
+                        @if($pesoTotal > 0)
+                            <span style="font-size:.75rem;color:#999;font-weight:400">
+                                (Peso: {{ number_format($pesoTotal, 2) }} kg)
+                            </span>
+                        @endif
                     </div>
                     <form method="POST" action="{{ route('carrito.transporte') }}" id="transporteForm">
                         @csrf
@@ -124,15 +129,28 @@
                                 ['val'=>'moto',  'icon'=>'🏍️', 'nombre'=>'Moto Rápido',  'desc'=>'Entrega en 4h', 'precio'=>'$ 8.000'],
                                 ['val'=>'carro', 'icon'=>'🚗', 'nombre'=>'Carro Seguro', 'desc'=>'Entrega en 6h', 'precio'=>'$ 12.000'],
                             ] as $op)
-                                <label class="transport-opt">
+                                @php
+                                    $disponible = $transportesDisponibles[$op['val']]['disponible'];
+                                    $mensaje = $transportesDisponibles[$op['val']]['mensaje'];
+                                @endphp
+                                <label class="transport-opt"
+                                       style="{{ !$disponible ? 'opacity:.5;pointer-events:none;' : '' }}">
                                     <input type="radio" name="transporte" value="{{ $op['val'] }}"
                                            {{ session('transporte', 'moto') === $op['val'] ? 'checked' : '' }}
+                                           {{ !$disponible ? 'disabled' : '' }}
                                            onchange="document.getElementById('transporteForm').submit()">
                                     <div class="transport-opt__left">
                                         <span class="transport-opt__icon">{{ $op['icon'] }}</span>
                                         <div>
                                             <div class="transport-opt__name">{{ $op['nombre'] }}</div>
-                                            <div class="transport-opt__desc">{{ $op['desc'] }}</div>
+                                            <div class="transport-opt__desc">
+                                                {{ $op['desc'] }}
+                                                @if(!$disponible && $mensaje)
+                                                    <span style="display:block;font-size:.7rem;color:#e74c3c;margin-top:.2rem">
+                                                        ⚠️ {{ $mensaje }}
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="transport-opt__price">{{ $op['precio'] }}</div>

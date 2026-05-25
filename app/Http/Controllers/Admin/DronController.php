@@ -231,9 +231,13 @@ class DronController extends Controller
             ];
 
             if ($dron) {
+                // Consumir batería durante el vuelo: ~0.5% cada 4 segundos (12% por minuto)
+                $nuevaBateria = max(0, $dron->bateria_actual_pct - 0.5);
+
                 $dron->update([
-                    'lat_actual' => $latActual,
-                    'lng_actual' => $lngActual,
+                    'lat_actual'         => $latActual,
+                    'lng_actual'         => $lngActual,
+                    'bateria_actual_pct' => $nuevaBateria,
                 ]);
                 $dron->refresh();
             }

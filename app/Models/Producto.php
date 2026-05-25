@@ -5,11 +5,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Producto extends Model
 {
-    protected $fillable = ['nombre', 'slug', 'descripcion', 'precio', 'stock', 'imagen', 'caracteristicas', 'categoria_id', 'proveedor_id', 'activo'];
+    protected $fillable = ['nombre', 'slug', 'descripcion', 'precio', 'stock', 'peso_kg', 'imagen', 'caracteristicas', 'categoria_id', 'proveedor_id', 'activo'];
 
     protected $casts = [
         'caracteristicas' => 'array',
         'precio'          => 'decimal:2',
+        'peso_kg'         => 'decimal:3',
         'activo'          => 'boolean',
     ];
 

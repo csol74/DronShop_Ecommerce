@@ -110,7 +110,7 @@ class EntregaController extends Controller
                     $orden->fresh(['items.producto']),
                     'en_camino'
                 );
-        }       
+        }
 
         $orden->refresh();
         $orden->load('seguimiento');
@@ -182,12 +182,22 @@ class EntregaController extends Controller
             ]);
 
             // Cerrar vuelo si es dron
+             // Cerrar vuelo si es dron
             if ($orden->vuelo) {
                 $orden->vuelo->update([
                     'estado_mision'   => 'completado',
                     'hora_aterrizaje' => now(),
                 ]);
-                \App\Models\Dron::first()?->update(['estado' => 'disponible']);
+
+                $dron = \App\Models\Dron::first();
+                if ($dron) {
+                    // Consumir batería al completar entrega: 5-10%
+                    $nuevaBateria = max(0, $dron->bateria_actual_pct - rand(5, 10));
+                    $dron->update([
+                        'estado'             => 'disponible',
+                        'bateria_actual_pct' => $nuevaBateria,
+                    ]);
+                }
             }
         });
 

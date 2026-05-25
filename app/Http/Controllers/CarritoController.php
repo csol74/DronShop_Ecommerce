@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Carrito;
 use App\Models\Producto;
+use App\Models\Dron;
 use Illuminate\Http\Request;
 
 class CarritoController extends Controller
@@ -14,11 +15,22 @@ class CarritoController extends Controller
             ->get();
 
         $subtotal   = $items->sum(fn($i) => $i->cantidad * $i->producto->precio);
-        $costoEnvio = $this->calcularEnvio(session('transporte', 'moto'), $subtotal);
+        $pesoTotal  = $this->calcularPesoTotal();
+        $transporte = session('transporte', 'moto');
+
+        // Validar que transporte siga siendo válido
+        if (!$this->transporte_valido($transporte, $pesoTotal)) {
+            $transporte = 'moto';
+            session(['transporte' => $transporte]);
+        }
+
+        $costoEnvio = $this->calcularEnvio($transporte, $subtotal);
         $iva        = round($subtotal * 0.19, 2);
         $total      = $subtotal + $costoEnvio + $iva;
 
-        return view('carrito.index', compact('items', 'subtotal', 'costoEnvio', 'iva', 'total'));
+        $transportesDisponibles = $this->obtener_transportes_disponibles($pesoTotal);
+
+        return view('carrito.index', compact('items', 'subtotal', 'costoEnvio', 'iva', 'total', 'pesoTotal', 'transportesDisponibles'));
     }
 
     public function agregar(Request $request, Producto $producto)
@@ -78,8 +90,58 @@ class CarritoController extends Controller
     public function setTransporte(Request $request)
     {
         $request->validate(['transporte' => 'required|in:dron,moto,carro']);
-        session(['transporte' => $request->transporte]);
-        return back();
+
+        $pesoTotal = $this->calcularPesoTotal();
+        $transporte = $request->transporte;
+
+        // Validar peso si es dron
+        if ($transporte === 'dron' && !$this->transporte_valido('dron', $pesoTotal)) {
+            $capacidadDron = $this->obtener_capacidad_dron();
+            return back()->with('error', "❌ Peso total ({$pesoTotal} kg) supera capacidad del dron ({$capacidadDron} kg). Elige otro transporte.");
+        }
+
+        session(['transporte' => $transporte]);
+        return back()->with('success', "Transporte actualizado a: " . ucfirst($transporte));
+    }
+
+    public function calcularPesoTotal(): float
+    {
+        return Carrito::where('user_id', auth()->id())
+            ->with('producto')
+            ->get()
+            ->sum(fn($item) => $item->cantidad * ($item->producto->peso_kg ?? 0));
+    }
+
+    public function obtener_capacidad_dron(): float
+    {
+        $dron = Dron::where('estado', 'disponible')->first();
+        return $dron ? (float) $dron->carga_max_kg : 2.7;
+    }
+
+    public function transporte_valido(string $transporte, float $peso): bool
+    {
+        if ($transporte !== 'dron') {
+            return true;
+        }
+
+        $capacidad = $this->obtener_capacidad_dron();
+        return $peso <= $capacidad;
+    }
+
+    public function obtener_transportes_disponibles(float $pesoTotal): array
+    {
+        $capacidadDron = $this->obtener_capacidad_dron();
+
+        return [
+            'dron' => [
+                'disponible' => $pesoTotal <= $capacidadDron,
+                'mensaje' => $pesoTotal > $capacidadDron
+                    ? "Peso: {$pesoTotal} kg > Capacidad: {$capacidadDron} kg"
+                    : null
+            ],
+            'moto' => ['disponible' => true, 'mensaje' => null],
+            'carro' => ['disponible' => true, 'mensaje' => null],
+        ];
     }
 
     public static function calcularEnvio(string $tipo, float $subtotal): float

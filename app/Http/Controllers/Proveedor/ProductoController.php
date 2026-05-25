@@ -80,7 +80,7 @@ class ProductoController extends Controller
         Producto::create($data);
 
         return redirect()->route('proveedor.productos.index')
-            ->with('success', '✓ Producto publicado en el catálogo.');
+            ->with('success', 'Producto publicado en el catálogo.');
     }
 
     public function edit(Producto $producto)
@@ -116,7 +116,7 @@ class ProductoController extends Controller
         $producto->update($data);
 
         return redirect()->route('proveedor.productos.index')
-            ->with('success', '✓ Producto actualizado correctamente.');
+            ->with('success', 'Producto actualizado correctamente.');
     }
 
     public function toggleActivo(Producto $producto)

@@ -143,25 +143,25 @@ class DronShopSeeder extends Seeder
 
         $productos = [
             // ELECTRÓNICA
-            ['nombre'=>'iPhone Ultra X','precio'=>5200000,'categoria_id'=>$catElectronica,'proveedor_id'=>$prov1, 'img' => 'https://picsum.photos/id/160/600/400'],
-            ['nombre'=>'Tablet Pro 12','precio'=>2100000,'categoria_id'=>$catElectronica,'proveedor_id'=>$prov1, 'img' => 'https://picsum.photos/id/0/600/400'],
-            ['nombre'=>'Monitor 4K 144Hz','precio'=>1800000,'categoria_id'=>$catElectronica,'proveedor_id'=>$prov1, 'img' => 'https://picsum.photos/id/201/600/400'],
-            ['nombre'=>'Teclado Mecánico RGB','precio'=>450000,'categoria_id'=>$catElectronica,'proveedor_id'=>$prov1, 'img' => 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=600'],
-            ['nombre'=>'Mouse Gamer Pro','precio'=>320000,'categoria_id'=>$catElectronica,'proveedor_id'=>$prov1, 'img' => 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600'],
+            ['nombre'=>'iPhone Ultra X','precio'=>5200000,'categoria_id'=>$catElectronica,'proveedor_id'=>$prov1, 'img' => 'https://picsum.photos/id/160/600/400', 'peso' => 0.2],
+            ['nombre'=>'Tablet Pro 12','precio'=>2100000,'categoria_id'=>$catElectronica,'proveedor_id'=>$prov1, 'img' => 'https://picsum.photos/id/0/600/400', 'peso' => 0.6],
+            ['nombre'=>'Monitor 4K 144Hz','precio'=>1800000,'categoria_id'=>$catElectronica,'proveedor_id'=>$prov1, 'img' => 'https://picsum.photos/id/201/600/400', 'peso' => 5.0],
+            ['nombre'=>'Teclado Mecánico RGB','precio'=>250000,'categoria_id'=>$catElectronica,'proveedor_id'=>$prov1, 'img' => 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=600', 'peso' => 1.5],
+            ['nombre'=>'Mouse Gamer Pro','precio'=>320000,'categoria_id'=>$catElectronica,'proveedor_id'=>$prov1, 'img' => 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600', 'peso' => 0.15],
 
             // DEPORTE
-            ['nombre'=>'Cinta de correr Pro','precio'=>3200000,'categoria_id'=>$catDeporte,'proveedor_id'=>$prov2, 'img' => 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=600'],
-            ['nombre'=>'Guantes Gym Elite','precio'=>120000,'categoria_id'=>$catDeporte,'proveedor_id'=>$prov2, 'img' => 'https://images.unsplash.com/photo-1583473848882-f9a5bc7fd2ee?w=600'],
-            ['nombre'=>'Balón Profesional','precio'=>95000,'categoria_id'=>$catDeporte,'proveedor_id'=>$prov2, 'img' => 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600'],
-            ['nombre'=>'Mancuernas 20kg','precio'=>280000,'categoria_id'=>$catDeporte,'proveedor_id'=>$prov2, 'img' => 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=600'],
-            ['nombre'=>'Banda resistencia kit','precio'=>75000,'categoria_id'=>$catDeporte,'proveedor_id'=>$prov2, 'img' => 'https://images.unsplash.com/photo-1517130038641-a774d04afb3c?q=80&w=600'],
+            ['nombre'=>'Cinta de correr Pro','precio'=>3200000,'categoria_id'=>$catDeporte,'proveedor_id'=>$prov2, 'img' => 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=600', 'peso' => 50.0],
+            ['nombre'=>'Guantes Gym Elite','precio'=>120000,'categoria_id'=>$catDeporte,'proveedor_id'=>$prov2, 'img' => 'https://images.unsplash.com/photo-1583473848882-f9a5bc7fd2ee?w=600', 'peso' => 0.3],
+            ['nombre'=>'Balón Profesional','precio'=>95000,'categoria_id'=>$catDeporte,'proveedor_id'=>$prov2, 'img' => 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600', 'peso' => 0.5],
+            ['nombre'=>'Mancuernas 20kg','precio'=>108000,'categoria_id'=>$catDeporte,'proveedor_id'=>$prov2, 'img' => 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=600', 'peso' => 20.0],
+            ['nombre'=>'Banda resistencia kit','precio'=>35000,'categoria_id'=>$catDeporte,'proveedor_id'=>$prov2, 'img' => 'https://images.unsplash.com/photo-1517130038641-a774d04afb3c?q=80&w=600', 'peso' => 0.8],
 
             // ROPA
-            ['nombre'=>'Camiseta Oversize','precio'=>90000,'categoria_id'=>$catRopa,'proveedor_id'=>$prov3, 'img' => 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'],
-            ['nombre'=>'Pantalón Jogger','precio'=>140000,'categoria_id'=>$catRopa,'proveedor_id'=>$prov3, 'img' => 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=600'],
-            ['nombre'=>'Gorra Streetwear','precio'=>60000,'categoria_id'=>$catRopa,'proveedor_id'=>$prov3, 'img' => 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=600'],
-            ['nombre'=>'Chaqueta Windbreaker','precio'=>220000,'categoria_id'=>$catRopa,'proveedor_id'=>$prov3, 'img' => 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=600'],
-            ['nombre'=>'Hoodie Premium','precio'=>180000,'categoria_id'=>$catRopa,'proveedor_id'=>$prov3, 'img' => 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600'],
+            ['nombre'=>'Camiseta Oversize','precio'=>90000,'categoria_id'=>$catRopa,'proveedor_id'=>$prov3, 'img' => 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600', 'peso' => 0.25],
+            ['nombre'=>'Pantalón Jogger','precio'=>140000,'categoria_id'=>$catRopa,'proveedor_id'=>$prov3, 'img' => 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=600', 'peso' => 0.35],
+            ['nombre'=>'Gorra Streetwear','precio'=>30000,'categoria_id'=>$catRopa,'proveedor_id'=>$prov3, 'img' => 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=600', 'peso' => 0.1],
+            ['nombre'=>'Chaqueta Windbreaker','precio'=>120000,'categoria_id'=>$catRopa,'proveedor_id'=>$prov3, 'img' => 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=600', 'peso' => 0.6],
+            ['nombre'=>'Hoodie Premium','precio'=>99000,'categoria_id'=>$catRopa,'proveedor_id'=>$prov3, 'img' => 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600', 'peso' => 0.5],
         ];
 
         foreach ($productos as $p) {
@@ -172,6 +172,7 @@ class DronShopSeeder extends Seeder
                 'precio' => $p['precio'],
                 'stock' => rand(10, 80),
                 'stock_minimo' => 5,
+                'peso_kg' => $p['peso'],
                 'imagen' => $p['img'],
                 'caracteristicas' => json_encode(['Calidad'=>'Premium', 'Garantía' => '1 año']),
                 'categoria_id' => $p['categoria_id'],

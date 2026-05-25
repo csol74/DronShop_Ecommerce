@@ -63,6 +63,6 @@ class OrdenController extends Controller
             }
         }
 
-        return back()->with('success', '✓ Logístico asignado. La orden ya aparece en su panel.');
+        return back()->with('success', 'Logístico asignado. La orden ya aparece en su panel.');
     }
 }
